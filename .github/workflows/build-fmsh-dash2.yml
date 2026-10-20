@@ -1,0 +1,155 @@
+name: build-komi-a31-fmsh-dash2
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: openwrt-21.02
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev python3-distutils python3-setuptools rsync swig unzip zlib1g-dev file wget curl
+
+      - name: Update feeds
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Add FM25S01A (FudanMicro) SPI-NAND support patch
+        run: |
+          cat > target/linux/generic/backport-5.4/494-mtd-spinand-add-support-fmsh.patch <<'PATCH'
+--- a/drivers/mtd/nand/spi/Makefile
++++ b/drivers/mtd/nand/spi/Makefile
+@@ -1,3 +1,3 @@
+ # SPDX-License-Identifier: GPL-2.0
+-spinand-objs := core.o gigadevice.o macronix.o micron.o paragon.o toshiba.o winbond.o etron.o esmt.o
++spinand-objs := core.o gigadevice.o macronix.o micron.o paragon.o toshiba.o winbond.o etron.o esmt.o fmsh.o
+ obj-$(CONFIG_MTD_SPI_NAND) += spinand.o
+--- a/drivers/mtd/nand/spi/core.c
++++ b/drivers/mtd/nand/spi/core.c
+@@ -759,7 +759,8 @@
+ 	&paragon_spinand_manufacturer,
+ 	&toshiba_spinand_manufacturer,
+ 	&winbond_spinand_manufacturer,
+ 	&esmt_c8_spinand_manufacturer,
++	&fmsh_spinand_manufacturer,
+ };
+ 
+ static int spinand_manufacturer_match(struct spinand_device *spinand,
+--- a/include/linux/mtd/spinand.h
++++ b/include/linux/mtd/spinand.h
+@@ -245,7 +245,8 @@
+ extern const struct spinand_manufacturer paragon_spinand_manufacturer;
+ extern const struct spinand_manufacturer toshiba_spinand_manufacturer;
+ extern const struct spinand_manufacturer winbond_spinand_manufacturer;
+ extern const struct spinand_manufacturer esmt_c8_spinand_manufacturer;
++extern const struct spinand_manufacturer fmsh_spinand_manufacturer;
+ 
+ /**
+  * struct spinand_op_variants - SPI NAND operation variants
+--- /dev/null
++++ b/drivers/mtd/nand/spi/fmsh.c
+@@ -0,0 +1,78 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Fudan Micro SPI NAND driver
++ *
++ * Copyright (c) 2020-2021 Rockchip Electronics Co., Ltd.
++ * Author: Dingqiang Lin <jon.lin@rock-chips.com>
++ */
++#include <linux/device.h>
++#include <linux/kernel.h>
++#include <linux/mtd/spinand.h>
++
++#define SPINAND_MFR_FMSH		0xA1
++
++static SPINAND_OP_VARIANTS(read_cache_variants,
++		SPINAND_PAGE_READ_FROM_CACHE_X4_OP(0, 1, NULL, 0),
++		SPINAND_PAGE_READ_FROM_CACHE_X2_OP(0, 1, NULL, 0),
++		SPINAND_PAGE_READ_FROM_CACHE_OP(true, 0, 1, NULL, 0),
++		SPINAND_PAGE_READ_FROM_CACHE_OP(false, 0, 1, NULL, 0));
++static SPINAND_OP_VARIANTS(write_cache_variants,
++		SPINAND_PROG_LOAD_X4(true, 0, NULL, 0),
++		SPINAND_PROG_LOAD(true, 0, NULL, 0));
++static SPINAND_OP_VARIANTS(update_cache_variants,
++		SPINAND_PROG_LOAD_X4(false, 0, NULL, 0),
++		SPINAND_PROG_LOAD(false, 0, NULL, 0));
++
++static int fm25s01a_ooblayout_ecc(struct mtd_info *mtd, int section,
++				  struct mtd_oob_region *region)
++{
++	return -ERANGE;
++}
++
++static int fm25s01a_ooblayout_free(struct mtd_info *mtd, int section,
++				   struct mtd_oob_region *region)
++{
++	if (section)
++		return -ERANGE;
++
++	region->offset = 2;
++	region->length = 62;
++
++	return 0;
++}
++
++static const struct mtd_ooblayout_ops fm25s01a_ooblayout = {
++	.ecc = fm25s01a_ooblayout_ecc,
++	.free = fm25s01a_ooblayout_free,
++};
++
++static const struct spinand_info fmsh_spinand_table[] = {
++	SPINAND_INFO("FM25S01A",
++		     SPINAND_ID(SPINAND_READID_METHOD_OPCODE_DUMMY, 0xE4),
++		     NAND_MEMORG(1, 2048, 64, 64, 1024, 20, 1, 1, 1),
++		     NAND_ECCREQ(1, 512),
++		     SPINAND_INFO_OP_VARIANTS(&read_cache_variants,
++					      &write_cache_variants,
++					      &update_cache_variants),
++		     0,
++		     SPINAND_ECCINFO(&fm25s01a_ooblayout, NULL)),
++};
++
++static const struct spinand_manufacturer_ops fmsh_spinand_manuf_ops = {
++};
++
++const struct spinand_manufacturer fmsh_spinand_manufacturer = {
++	.id = SPINAND_MFR_FMSH,
++	.name = "Fudan Micro",
++	.chips = fmsh_spinand_table,
++	.nchips = ARRAY_SIZE(fmsh_spinand_table),
++	.ops = &fmsh_spinand_manuf_ops,
++};
+PATCH
+          echo "patch written:"
+          ls -l target/linux/generic/backport-5.4/494-mtd-spinand-add-support-fmsh.patch
+
+      - name: Add dash2 LuCI app
+        run: |
+          git clone --depth 1 https://github.com/yyyyy114514/luci-app-mtk-dash2.git package/luci-app-mtk-dash2
+          ls -l package/luci-app-mtk-dash2/Makefile
+
+      - name: Configure
+        run: |
+          cp -f defconfig/mt7981-ax3000-mtwifi-cfg.config .config
+          echo 'CONFIG_PACKAGE_luci-app-mtk-dash2=y' >> .config
+          make defconfig
+          grep -E 'konka_komi-a31|luci-app-mtk-dash2|mtwifi-cfg' .config
+
+      - name: Build
+        run: make -j$(nproc)
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: komi-a31-firmware-fmsh
+          path: |
+            bin/targets/mediatek/mt7981/*konka_komi-a31-initramfs*.bin
+            bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-factory*.bin
+            bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-sysupgrade*.bin
