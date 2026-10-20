@@ -81,7 +81,7 @@ jobs:
           Y29uc3Qgc3RydWN0IHNwaW5hbmRfbWFudWZhY3R1cmVyIGZtc2hfc3BpbmFuZF9tYW51ZmFjdHVy
           ZXIgPSB7CisJLmlkID0gU1BJTkFORF9NRlJfRk1TSCwKKwkubmFtZSA9ICJGdWRhbiBNaWNybyIs
           CisJLmNoaXBzID0gZm1zaF9zcGluYW5kX3RhYmxlLAorCS5uY2hpcHMgPSBBUlJBWV9TSVpFKGZt
-          c2hfc3BpbmFuZF90YWJsZSksCisJLm9wcyA9ICZmbXNoX3NwaW5hbmRfbWFudWZfb3BzLAorfTsK' | base64 -d > target/linux/generic/backport-5.4/494-mtd-spinand-add-support-fmsh.patch
+          c2hfc3BpbmFuZF90YWJsZSksCisJLm9wcyA9ICZmbXNoX3NwaW5hbmRfbWFudWZfb3BzLAorfTsK' | tr -d ' ' | base64 -d > target/linux/generic/backport-5.4/494-mtd-spinand-add-support-fmsh.patch
           ls -l target/linux/generic/backport-5.4/494-mtd-spinand-add-support-fmsh.patch
 
       - name: Add dash2 LuCI app
