@@ -98,8 +98,9 @@ jobs:
 
       - name: Build
         run: |
+          ulimit -s 65536
           set -o pipefail
-          make -j$(nproc) V=sc 2>&1 | tee build.log
+          make -j$(nproc) V=s 2>&1 | tee build.log
         continue-on-error: true
 
       - name: Check build result
