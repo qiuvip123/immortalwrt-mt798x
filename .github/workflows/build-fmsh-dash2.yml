@@ -97,7 +97,22 @@ jobs:
           grep -E 'konka_komi-a31|luci-app-mtk-dash2|mtwifi-cfg' .config
 
       - name: Build
-        run: make -j$(nproc)
+        run: |
+          set -o pipefail
+          make -j$(nproc) 2>&1 | tee build.log
+        continue-on-error: true
+
+      - name: Check build result
+        run: |
+          if ls bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-sysupgrade*.bin >/dev/null 2>&1; then
+            echo "BUILD_OK"
+          else
+            echo "BUILD_FAILED - errors:"
+            grep -n -i -E "error:|Error [0-9]|failed to build|FAILED|patch.*failed|Hunk" build.log | tail -60
+            echo "---- last 60 lines ----"
+            tail -60 build.log
+            exit 1
+          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -107,3 +122,5 @@ jobs:
             bin/targets/mediatek/mt7981/*konka_komi-a31-initramfs*.bin
             bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-factory*.bin
             bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-sysupgrade*.bin
+            build.log
+          if-no-files-found: warn
