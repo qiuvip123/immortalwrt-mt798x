@@ -99,20 +99,23 @@ jobs:
       - name: Build
         run: |
           set -o pipefail
-          make -j$(nproc) 2>&1 | tee build.log
+          make -j$(nproc) V=sc 2>&1 | tee build.log
         continue-on-error: true
 
       - name: Check build result
+        id: check
         run: |
           if ls bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-sysupgrade*.bin >/dev/null 2>&1; then
             echo "BUILD_OK"
+            echo "ok=true" >> $GITHUB_OUTPUT
           else
             echo "BUILD_FAILED - errors:"
-            grep -n -i -E "error:|Error [0-9]|failed to build|FAILED|patch.*failed|Hunk" build.log | tail -60
-            echo "---- last 60 lines ----"
-            tail -60 build.log
-            exit 1
+            grep -n -i -E "error:|Error [0-9]|failed to build|FAILED|patch.*failed|Hunk|fatal|No such file|cannot|undefined" build.log | tail -80
+            echo "---- last 80 lines ----"
+            tail -80 build.log
+            echo "ok=false" >> $GITHUB_OUTPUT
           fi
+        continue-on-error: true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -124,3 +127,7 @@ jobs:
             bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-sysupgrade*.bin
             build.log
           if-no-files-found: warn
+
+      - name: Fail job if build failed
+        if: steps.check.outputs.ok == 'false'
+        run: exit 1
