@@ -16,12 +16,10 @@ jobs:
         run: |
           git clone --depth 1 -b dev https://gitee.com/shenyachuan/rm65.git .
           git log --oneline -1
-          ls
 
       - name: Patch feeds.conf.default (drop mtk feed requiring git01 auth)
         run: |
           sed -i '/mtk_openwrt_feed/d' feeds.conf.default
-          echo '--- feeds.conf.default ---'
           cat feeds.conf.default
 
       - name: Update feeds
@@ -36,73 +34,19 @@ jobs:
 
       - name: Add A31 image definition (mt7981.mk)
         run: |
-          cat >> target/linux/mediatek/image/mt7981.mk <<'MK'
-
-define Device/konka_komi-a31
-  DEVICE_VENDOR := KONKA
-  DEVICE_MODEL := KOMI A31
-  DEVICE_DTS := mt7981-konka-komi-a31
-  DEVICE_DTS_DIR := $(DTS_DIR)/mediatek
-  SUPPORTED_DEVICES := konka,komi-a31
-  UBINIZE_OPTS := -E 5
-  BLOCKSIZE := 128k
-  PAGESIZE := 2048
-  IMAGE_SIZE := 114688k
-  KERNEL_IN_UBI := 1
-  IMAGES += factory.bin
-  IMAGE/factory.bin := append-ubi | check-size $$$$(IMAGE_SIZE)
-  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
-endef
-TARGET_DEVICES += konka_komi-a31
-MK
+          echo 'ZGVmaW5lIERldmljZS9rb25rYV9rb21pLWEzMQogIERFVklDRV9WRU5ET1IgOj0gS09OS0EKICBERVZJQ0VfTU9ERUwgOj0gS09NSSBBMzEKICBERVZJQ0VfRFRTIDo9IG10Nzk4MS1rb25rYS1rb21pLWEzMQogIERFVklDRV9EVFNfRElSIDo9ICQoRFRTX0RJUikvbWVkaWF0ZWsKICBTVVBQT1JURURfREVWSUNFUyA6PSBrb25rYSxrb21pLWEzMQogIFVCSU5JWkVfT1BUUyA6PSAtRSA1CiAgQkxPQ0tTSVpFIDo9IDEyOGsKICBQQUdFU0laRSA6PSAyMDQ4CiAgSU1BR0VfU0laRSA6PSAxMTQ2ODhrCiAgS0VSTkVMX0lOX1VCSSA6PSAxCiAgSU1BR0VTICs9IGZhY3RvcnkuYmluCiAgSU1BR0UvZmFjdG9yeS5iaW4gOj0gYXBwZW5kLXViaSB8IGNoZWNrLXNpemUgJCQkJChJTUFHRV9TSVpFKQogIElNQUdFL3N5c3VwZ3JhZGUuYmluIDo9IHN5c3VwZ3JhZGUtdGFyIHwgYXBwZW5kLW1ldGFkYXRhCmVuZGVmClRBUkdFVF9ERVZJQ0VTICs9IGtvbmthX2tvbWktYTMxCg==' | base64 -d >> target/linux/mediatek/image/mt7981.mk
           grep -A 20 'define Device/konka_komi-a31' target/linux/mediatek/image/mt7981.mk
 
       - name: Add A31 network config (02_network)
         run: |
-          python3 - <<'PY'
-p = 'target/linux/mediatek/mt7981/base-files/etc/board.d/02_network'
-s = open(p).read()
-net_case = '''	*konka,komi-a31*)
-		ucidef_set_interfaces_lan_wan "lan1 lan2 lan3" wan
-		;;
-'''.replace('\\t', '\t')
-anchor = '\t*)'
-idx = s.find(anchor)
-assert idx > 0, 'default case not found'
-s = s[:idx] + net_case + s[idx:]
-open(p, 'w').write(s)
-print('02_network patched')
-PY
+          echo 'cCA9ICd0YXJnZXQvbGludXgvbWVkaWF0ZWsvbXQ3OTgxL2Jhc2UtZmlsZXMvZXRjL2JvYXJkLmQvMDJfbmV0d29yaycKcyA9IG9wZW4ocCkucmVhZCgpCm5ldF9jYXNlID0gIiIiXHQqa29ua2Esa29taS1hMzEqKQpcdFx0dWNpZGVmX3NldF9pbnRlcmZhY2VzX2xhbl93YW4gImxhbjEgbGFuMiBsYW4zIiB3YW4KXHRcdDs7CiIiIgphbmNob3IgPSAiXHQqKSIKaWR4ID0gcy5maW5kKGFuY2hvcikKYXNzZXJ0IGlkeCA+IDAsICdkZWZhdWx0IGNhc2Ugbm90IGZvdW5kJwpzID0gc1s6aWR4XSArIG5ldF9jYXNlICsgc1tpZHg6XQpvcGVuKHAsICd3Jykud3JpdGUocykKcHJpbnQoJzAyX25ldHdvcmsgcGF0Y2hlZCcpCg==' | base64 -d > /tmp/patch_net.py
+          python3 /tmp/patch_net.py
           grep -n 'komi-a31' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
 
       - name: Add A31 sysupgrade support (platform.sh)
         run: |
-          python3 - <<'PY'
-p = 'target/linux/mediatek/mt7981/base-files/lib/upgrade/platform.sh'
-s = open(p).read()
-# platform_do_upgrade: add A31 -> nand_do_upgrade
-old_up = '''\t*snand*)
-\t\tubi_do_upgrade "$1"
-\t\t;;'''
-new_up = '''\t*konka,komi-a31*)
-\t\tnand_do_upgrade "$1"
-\t\t;;
-\t*snand*)
-\t\tubi_do_upgrade "$1"
-\t\t;;'''
-assert old_up in s, 'upgrade anchor missing'
-s = s.replace(old_up, new_up)
-# platform_check_image: add A31 to ustar branch
-old_ck = '''\t*snand* |\\
-\t*emmc*)'''
-new_ck = '''\t*konka,komi-a31* |\\
-\t*snand* |\\
-\t*emmc*)'''
-assert old_ck in s, 'check anchor missing'
-s = s.replace(old_ck, new_ck)
-open(p, 'w').write(s)
-print('platform.sh patched')
-PY
+          echo 'cCA9ICd0YXJnZXQvbGludXgvbWVkaWF0ZWsvbXQ3OTgxL2Jhc2UtZmlsZXMvbGliL3VwZ3JhZGUvcGxhdGZvcm0uc2gnCnMgPSBvcGVuKHApLnJlYWQoKQpvbGRfdXAgPSAiIiJcdCpzbmFuZCopClx0XHR1YmlfZG9fdXBncmFkZSAiJDEiClx0XHQ7OyIiIgpuZXdfdXAgPSAiIiJcdCprb25rYSxrb21pLWEzMSopClx0XHRuYW5kX2RvX3VwZ3JhZGUgIiQxIgpcdFx0OzsKXHQqc25hbmQqKQpcdFx0dWJpX2RvX3VwZ3JhZGUgIiQxIgpcdFx0OzsiIiIKYXNzZXJ0IG9sZF91cCBpbiBzLCAndXBncmFkZSBhbmNob3IgbWlzc2luZycKcyA9IHMucmVwbGFjZShvbGRfdXAsIG5ld191cCkKb2xkX2NrID0gIiIiXHQqc25hbmQqIHxcXApcdCplbW1jKikiIiIKbmV3X2NrID0gIiIiXHQqa29ua2Esa29taS1hMzEqIHxcXApcdCpzbmFuZCogfFxcClx0KmVtbWMqKSIiIgphc3NlcnQgb2xkX2NrIGluIHMsICdjaGVjayBhbmNob3IgbWlzc2luZycKcyA9IHMucmVwbGFjZShvbGRfY2ssIG5ld19jaykKb3BlbihwLCAndycpLndyaXRlKHMpCnByaW50KCdwbGF0Zm9ybS5zaCBwYXRjaGVkJykK' | base64 -d > /tmp/patch_plat.py
+          python3 /tmp/patch_plat.py
           grep -n 'komi-a31' target/linux/mediatek/mt7981/base-files/lib/upgrade/platform.sh
 
       - name: Add FM25S01A (FudanMicro) SPI-NAND support patch
@@ -112,22 +56,7 @@ PY
 
       - name: Configure (.config + make defconfig)
         run: |
-          cat > .config <<'CFG'
-CONFIG_TARGET_mediatek=y
-CONFIG_TARGET_mediatek_mt7981=y
-CONFIG_TARGET_mediatek_mt7981_DEVICE_konka_komi-a31=y
-CONFIG_PACKAGE_luci=y
-CONFIG_PACKAGE_luci-app-mtk=y
-CONFIG_PACKAGE_kmod-mt_wifi=y
-CONFIG_PACKAGE_wifi-profile=y
-CONFIG_PACKAGE_mapd=y
-CONFIG_PACKAGE_wappd=y
-CONFIG_PACKAGE_1905daemon=y
-CONFIG_PACKAGE_libmapd=y
-CONFIG_PACKAGE_bndstrg_plus=y
-CONFIG_PACKAGE_wificonf=y
-CONFIG_PACKAGE_ttyd=y
-CFG
+          echo 'Q09ORklHX1RBUkdFVF9tZWRpYXRlaz15CkNPTkZJR19UQVJHRVRfbWVkaWF0ZWtfbXQ3OTgxPXkKQ09ORklHX1RBUkdFVF9NVUxUSV9QUk9GSUxFPXkKQ09ORklHX1RBUkdFVF9ERVZJQ0VfbWVkaWF0ZWtfbXQ3OTgxX0RFVklDRV9rb25rYV9rb21pLWEzMT15CkNPTkZJR19UQVJHRVRfREVWSUNFX1BBQ0tBR0VTX21lZGlhdGVrX210Nzk4MV9ERVZJQ0Vfa29ua2Ffa29taS1hMzE9IiIKQ09ORklHX1RBUkdFVF9tZWRpYXRla19tdDc5ODFfREVWSUNFX2tvbmthX2tvbWktYTMxPXkKQ09ORklHX1BBQ0tBR0VfbHVjaT15CkNPTkZJR19QQUNLQUdFX2x1Y2ktYXBwLW10az15CkNPTkZJR19QQUNLQUdFX2ttb2QtbXRfd2lmaT15CkNPTkZJR19QQUNLQUdFX3dpZmktcHJvZmlsZT15CkNPTkZJR19QQUNLQUdFX21hcGQ9eQpDT05GSUdfUEFDS0FHRV93YXBwZD15CkNPTkZJR19QQUNLQUdFXzE5MDVkYWVtb249eQpDT05GSUdfUEFDS0FHRV9saWJtYXBkPXkKQ09ORklHX1BBQ0tBR0VfYm5kc3RyZ19wbHVzPXkKQ09ORklHX1BBQ0tBR0Vfd2lmaWNvbmY9eQpDT05GSUdfUEFDS0FHRV90dHlkPXkK' | base64 -d > .config
           make defconfig
           grep -E 'konka_komi-a31|kmod-mt_wifi|luci-app-mtk|mapd|wappd|1905daemon|libmapd|bndstrg|wificonf' .config
 
