@@ -1,0 +1,169 @@
+name: build-a31-rm65-easymesh
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev python3-distutils python3-setuptools rsync swig unzip zlib1g-dev file wget curl
+
+      - name: Clone rm65 source (dev branch, scq330)
+        run: |
+          git clone --depth 1 -b dev https://gitee.com/shenyachuan/rm65.git .
+          git log --oneline -1
+          ls
+
+      - name: Patch feeds.conf.default (drop mtk feed requiring git01 auth)
+        run: |
+          sed -i '/mtk_openwrt_feed/d' feeds.conf.default
+          echo '--- feeds.conf.default ---'
+          cat feeds.conf.default
+
+      - name: Update feeds
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Add A31 device tree (mt7981-konka-komi-a31.dts)
+        run: |
+          echo 'L2R0cy12MS87CiNpbmNsdWRlIDxkdC1iaW5kaW5ncy9ncGlvL2dwaW8uaD4KI2luY2x1ZGUgPGR0LWJpbmRpbmdzL2lucHV0L2lucHV0Lmg+CiNpbmNsdWRlICJtdDc5ODEuZHRzaSIKCi8gewogICAgICAgIG1vZGVsID0gIktPTktBIEtPTUkgQTMxIjsKICAgICAgICBjb21wYXRpYmxlID0gImtvbmthLGtvbWktYTMxIiwgIm1lZGlhdGVrLG10Nzk4MSI7CgoJYWxpYXNlcyB7CgkJbGVkLWJvb3QgPSAmc3RhdHVzX3JlZF9sZWQ7CgkJbGVkLWZhaWxzYWZlID0gJnN0YXR1c19yZWRfbGVkOwoJCWxlZC1ydW5uaW5nID0gJnN0YXR1c19ncmVlbl9sZWQ7CgkJbGVkLXVwZ3JhZGUgPSAmc3RhdHVzX2dyZWVuX2xlZDsKCX07CgoJY2hvc2VuIHsKCQlib290YXJncyA9ICJjb25zb2xlPXR0eVMwLDExNTIwMG4xIGxvZ2xldmVsPTggIFwKCQkJCWVhcmx5Y29uPXVhcnQ4MjUwLG1taW8zMiwweDExMDAyMDAwIjsKCX07CgogICAgICAgIG1lbW9yeSB7CiAgICAgICAgICAgICAgICByZWcgPSA8MCAweDQwMDAwMDAwIDAgMHgxMDAwMDAwMD47CiAgICAgICAgfTsKCQogICAgICAgIGxlZHMgewogICAgICAgICAgICAgICAgY29tcGF0aWJsZSA9ICJncGlvLWxlZHMiOwoKICAgICAgICAgICAgICAgIHN0YXR1c19ncmVlbl9sZWQ6IGxlZC0wIHsKICAgICAgICAgICAgICAgICAgICAgICAgbGFiZWwgPSAiZ3JlZW46c3RhdHVzIjsKICAgICAgICAgICAgICAgICAgICAgICAgZ3Bpb3MgPSA8JnBpbyA4IEdQSU9fQUNUSVZFX0xPVz47CiAgICAgICAgICAgICAgICB9OwoKICAgICAgICAgICAgICAgIHN0YXR1c19ibHVlX2xlZDogbGVkLTEgewogICAgICAgICAgICAgICAgICAgICAgICBsYWJlbCA9ICJibHVlOnN0YXR1cyI7CiAgICAgICAgICAgICAgICAgICAgICAgIGdwaW9zID0gPCZwaW8gMTMgR1BJT19BQ1RJVkVfTE9XPjsKICAgICAgICAgICAgICAgIH07CgogICAgICAgICAgICAgICAgc3RhdHVzX3JlZF9sZWQ6IGxlZC0yIHsKICAgICAgICAgICAgICAgICAgICAgICAgbGFiZWwgPSAicmVkOnN0YXR1cyI7CiAgICAgICAgICAgICAgICAgICAgICAgIGdwaW9zID0gPCZwaW8gMzQgR1BJT19BQ1RJVkVfTE9XPjsKICAgICAgICAgICAgICAgIH07CiAgICAgICAgfTsKCiAgICAgICAgZ3Bpby1rZXlzIHsKICAgICAgICAgICAgICAgIGNvbXBhdGlibGUgPSAiZ3Bpby1rZXlzIjsKICAgICAgICAgICAgICAgICAgICAgICAgYnV0dG9uLXJlc2V0IHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBsYWJlbCA9ICJyZXNldCI7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbGludXgsY29kZSA9IDxLRVlfUkVTVEFSVD47CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZ3Bpb3MgPSA8JnBpbyAxIEdQSU9fQUNUSVZFX0xPVz47CiAgICAgICAgICAgICAgICAgICAgICAgIH07CgogICAgICAgICAgICAgICAgICAgICAgICBidXR0b24tbWVzaCB7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbGFiZWwgPSAibWVzaCI7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZ3Bpb3MgPSA8JnBpbyAwIEdQSU9fQUNUSVZFX0xPVz47CgkJCQlsaW51eCxjb2RlID0gPEJUTl85PjsKCQkJCWxpbnV4LGlucHV0LXR5cGUgPSA8RVZfU1c+OwogICAgICAgICAgICAgICAgICAgICAgICB9OwogICAgICAgIH07CgoKCglubWJtX3NwaW1fbmFuZCB7CiAgICAgICAgICAgICAgICBjb21wYXRpYmxlID0gImdlbmVyaWMsbm1ibSI7CiAgICAgICAgICAgICAgICAjYWRkcmVzcy1jZWxscyA9IDwxPjsKICAgICAgICAgICAgICAgICNzaXplLWNlbGxzID0gPDE+OwoKICAgICAgICAgICAgICAgIGxvd2VyLW10ZC1kZXZpY2UgPSA8JnNwaV9uYW5kPjsKICAgICAgICAgICAgICAgIGZvcmNlZC1jcmVhdGU7CgogICAgICAgICAgICAgICAgcGFydGl0aW9ucyB7CiAgICAgICAgICAgICAgICAgICAgICAgIGNvbXBhdGlibGUgPSAiZml4ZWQtcGFydGl0aW9ucyI7CiAgICAgICAgICAgICAgICAgICAgICAgICNhZGRyZXNzLWNlbGxzID0gPDE+OwogICAgICAgICAgICAgICAgICAgICAgICAjc2l6ZS1jZWxscyA9IDwxPjsKCiAgICAgICAgICAgICAgICAgICAgICAgIHBhcnRpdGlvbkAwIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBsYWJlbCA9ICJCTDIiOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHJlZyA9IDwweDAwIDB4MTAwMDAwPjsKICAgICAgICAgICAgICAgICAgICAgICAgfTsKCiAgICAgICAgICAgICAgICAgICAgICAgIHBhcnRpdGlvbkAxMDAwMDAgewogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGxhYmVsID0gInUtYm9vdC1lbnYiOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHJlZyA9IDwweDEwMDAwMCAweDgwMDAwPjsKICAgICAgICAgICAgICAgICAgICAgICAgfTsKCiAgICAgICAgICAgICAgICAgICAgICAgIHBhcnRpdGlvbkAxODAwMDAgewogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGxhYmVsID0gIkZhY3RvcnkiOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHJlZyA9IDwweDE4MDAwMCAweDIwMDAwMD47CiAgICAgICAgICAgICAgICAgICAgICAgIH07CgogICAgICAgICAgICAgICAgICAgICAgICBwYXJ0aXRpb25AMzgwMDAwIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBsYWJlbCA9ICJGSVAiOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHJlZyA9IDwweDM4MDAwMCAweDIwMDAwMD47CiAgICAgICAgICAgICAgICAgICAgICAgIH07CgogICAgICAgICAgICAgICAgICAgICAgICBwYXJ0aXRpb25ANTgwMDAwIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBsYWJlbCA9ICJ1YmkiOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHJlZyA9IDwweDU4MDAwMCAweDcwMDAwMDA+OwogICAgICAgICAgICAgICAgICAgICAgICB9OwogICAgICAgICAgICAgICAgfTsKICAgICAgICB9Owp9OwoKJnVhcnQwIHsKICAgICAgICBzdGF0dXMgPSAib2theSI7Cn07Cgomd2F0Y2hkb2cgewogICAgICAgIHN0YXR1cyA9ICJva2F5IjsKfTsKICAKJmV0aCB7CglzdGF0dXMgPSAib2theSI7CgoJZ21hYzA6IG1hY0AwIHsKCQljb21wYXRpYmxlID0gIm1lZGlhdGVrLGV0aC1tYWMiOwoJCXJlZyA9IDwwPjsKCQlwaHktbW9kZSA9ICIyNTAwYmFzZS14IjsKCgkJZml4ZWQtbGluayB7CgkJCXNwZWVkID0gPDI1MDA+OwoJCQlmdWxsLWR1cGxleDsKCQkJcGF1c2U7CgkJfTsKCX07CgoJZ21hYzE6IG1hY0AxIHsKCQljb21wYXRpYmxlID0gIm1lZGlhdGVrLGV0aC1tYWMiOwoJCWxhYmVsID0gIndhbiI7CgkJcmVnID0gPDE+OwoJCXBoeS1tb2RlID0gImdtaWkiOwoJCXBoeS1oYW5kbGUgPSA8JnBoeTA+OwoJfTsKCgltZGlvOiBtZGlvLWJ1cyB7CgkJI2FkZHJlc3MtY2VsbHMgPSA8MT47CgkJI3NpemUtY2VsbHMgPSA8MD47CgoJCXBoeTA6IGV0aGVybmV0LXBoeUAwIHsKCQkJY29tcGF0aWJsZSA9ICJldGhlcm5ldC1waHktaWQwM2EyLjk0NjEiOwoJCQlyZWcgPSA8MD47CgkJCXBoeS1tb2RlID0gImdtaWkiOwoJCQludm1lbS1jZWxscyA9IDwmcGh5X2NhbGlicmF0aW9uPjsKCQkJbnZtZW0tY2VsbC1uYW1lcyA9ICJwaHktY2FsLWRhdGEiOwoJCX07CgoJCXN3aXRjaEAwIHsKCQkJY29tcGF0aWJsZSA9ICJtZWRpYXRlayxtdDc1MzEiOwoJCQlyZWcgPSA8MzE+OwoJCQlyZXNldC1ncGlvcyA9IDwmcGlvIDM5IDA+OwoKCQkJcG9ydHMgewoJCQkJI2FkZHJlc3MtY2VsbHMgPSA8MT47CgkJCQkjc2l6ZS1jZWxscyA9IDwwPjsKCgkJCQlwb3J0QDAgewoJCQkJCXJlZyA9IDwwPjsKCQkJCQlsYWJlbCA9ICJsYW4xIjsKCQkJCX07CgoJCQkJcG9ydEAxIHsKCQkJCQlyZWcgPSA8MT47CgkJCQkJbGFiZWwgPSAibGFuMiI7CgkJCQl9OwoKCQkJCXBvcnRAMiB7CgkJCQkJcmVnID0gPDI+OwoJCQkJCWxhYmVsID0gImxhbjMiOwoJCQkJfTsKCgkJCQlwb3J0QDYgewoJCQkJCXJlZyA9IDw2PjsKCQkJCQlsYWJlbCA9ICJjcHUiOwoJCQkJCWV0aGVybmV0ID0gPCZnbWFjMD47CgkJCQkJcGh5LW1vZGUgPSAiMjUwMGJhc2UteCI7CgoJCQkJCWZpeGVkLWxpbmsgewoJCQkJCQlzcGVlZCA9IDwyNTAwPjsKCQkJCQkJZnVsbC1kdXBsZXg7CgkJCQkJCXBhdXNlOwoJCQkJCX07CgkJCQl9OwoJCQl9OwoJCX07Cgl9Owp9OwoKJmhuYXQgewoJbXRrZXRoLXdhbiA9ICJldGgxIjsKCW10a2V0aC1sYW4gPSAibGFuIjsKCW10a2V0aC1tYXgtZ21hYyA9IDwyPjsKCXN0YXR1cyA9ICJva2F5IjsKfTsKCiZzcGkwIHsKICAgICAgICBwaW5jdHJsLW5hbWVzID0gImRlZmF1bHQiOwogICAgICAgIHBpbmN0cmwtMCA9IDwmc3BpMF9mbGFzaF9waW5zPjsKICAgICAgICBzdGF0dXMgPSAib2theSI7CgogICAgICAgIHNwaV9uYW5kOiBzcGlfbmFuZEAwIHsKICAgICAgICAgICAgICAgICNhZGRyZXNzLWNlbGxzID0gPDE+OwogICAgICAgICAgICAgICAgI3NpemUtY2VsbHMgPSA8MT47CiAgICAgICAgICAgICAgICBjb21wYXRpYmxlID0gInNwaS1uYW5kIjsKICAgICAgICAgICAgICAgIHJlZyA9IDwwPjsKICAgICAgICAgICAgICAgIHNwaS1tYXgtZnJlcXVlbmN5ID0gPDUyMDAwMDAwPjsKICAgICAgICAgICAgICAgIHNwaS10eC1idXMtd2lkdGggPSA8ND47CiAgICAgICAgICAgICAgICBzcGktcngtYnVzLXdpZHRoID0gPDQ+OwogICAgICAgICAgICAgICAgc3BpLWNhbC1lbmFibGU7CiAgICAgICAgICAgICAgICBzcGktY2FsLW1vZGUgPSAicmVhZC1kYXRhIjsKICAgICAgICAgICAgICAgIHNwaS1jYWwtZGF0YWxlbiA9IDw3PjsKICAgICAgICAgICAgICAgIHNwaS1jYWwtZGF0YSA9IC9iaXRzLyA4IDwweDUzIDB4NTAgMHg0OSAweDRFIDB4NDEgMHg0RSAweDQ0PjsgLyogJ1NQSU5BTkQnICovCiAgICAgICAgICAgICAgICBzcGktY2FsLWFkZHJsZW4gPSA8NT47CiAgICAgICAgICAgICAgICBzcGktY2FsLWFkZHIgPSAvYml0cy8gMzIgPDB4MCAweDAgMHgwIDB4MCAweDA+OwogICAgICAgIH07Cn07CgomcGlvIHsKCXNwaTBfZmxhc2hfcGluczogc3BpMC1waW5zIHsKCQltdXggewoJCQlmdW5jdGlvbiA9ICJzcGkiOwoJCQlncm91cHMgPSAic3BpMCIsICJzcGkwX3dwX2hvbGQiOwoJCX07CgoJCWNvbmYtcHUgewoJCQlwaW5zID0gIlNQSTBfQ1MiLCAiU1BJMF9IT0xEIiwgIlNQSTBfV1AiOwoJCQlkcml2ZS1zdHJlbmd0aCA9IDxNVEtfRFJJVkVfOG1BPjsKCQkJYmlhcy1wdWxsLXVwID0gPE1US19QVVBEX1NFVF9SMVIwXzExPjsKCQl9OwoKCQljb25mLXBkIHsKCQkJcGlucyA9ICJTUEkwX0NMSyIsICJTUEkwX01PU0kiLCAiU1BJMF9NSVNPIjsKCQkJZHJpdmUtc3RyZW5ndGggPSA8TVRLX0RSSVZFXzhtQT47CgkJCWJpYXMtcHVsbC1kb3duID0gPE1US19QVVBEX1NFVF9SMVIwXzExPjsKCQl9OwoJfTsKfTsK' | base64 -d > target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-konka-komi-a31.dts
+          ls -l target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-konka-komi-a31.dts
+
+      - name: Add A31 image definition (mt7981.mk)
+        run: |
+          cat >> target/linux/mediatek/image/mt7981.mk <<'MK'
+
+define Device/konka_komi-a31
+  DEVICE_VENDOR := KONKA
+  DEVICE_MODEL := KOMI A31
+  DEVICE_DTS := mt7981-konka-komi-a31
+  DEVICE_DTS_DIR := $(DTS_DIR)/mediatek
+  SUPPORTED_DEVICES := konka,komi-a31
+  UBINIZE_OPTS := -E 5
+  BLOCKSIZE := 128k
+  PAGESIZE := 2048
+  IMAGE_SIZE := 114688k
+  KERNEL_IN_UBI := 1
+  IMAGES += factory.bin
+  IMAGE/factory.bin := append-ubi | check-size $$$$(IMAGE_SIZE)
+  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
+endef
+TARGET_DEVICES += konka_komi-a31
+MK
+          grep -A 20 'define Device/konka_komi-a31' target/linux/mediatek/image/mt7981.mk
+
+      - name: Add A31 network config (02_network)
+        run: |
+          python3 - <<'PY'
+p = 'target/linux/mediatek/mt7981/base-files/etc/board.d/02_network'
+s = open(p).read()
+net_case = '''	*konka,komi-a31*)
+		ucidef_set_interfaces_lan_wan "lan1 lan2 lan3" wan
+		;;
+'''.replace('\\t', '\t')
+anchor = '\t*)'
+idx = s.find(anchor)
+assert idx > 0, 'default case not found'
+s = s[:idx] + net_case + s[idx:]
+open(p, 'w').write(s)
+print('02_network patched')
+PY
+          grep -n 'komi-a31' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network
+
+      - name: Add A31 sysupgrade support (platform.sh)
+        run: |
+          python3 - <<'PY'
+p = 'target/linux/mediatek/mt7981/base-files/lib/upgrade/platform.sh'
+s = open(p).read()
+# platform_do_upgrade: add A31 -> nand_do_upgrade
+old_up = '''\t*snand*)
+\t\tubi_do_upgrade "$1"
+\t\t;;'''
+new_up = '''\t*konka,komi-a31*)
+\t\tnand_do_upgrade "$1"
+\t\t;;
+\t*snand*)
+\t\tubi_do_upgrade "$1"
+\t\t;;'''
+assert old_up in s, 'upgrade anchor missing'
+s = s.replace(old_up, new_up)
+# platform_check_image: add A31 to ustar branch
+old_ck = '''\t*snand* |\\
+\t*emmc*)'''
+new_ck = '''\t*konka,komi-a31* |\\
+\t*snand* |\\
+\t*emmc*)'''
+assert old_ck in s, 'check anchor missing'
+s = s.replace(old_ck, new_ck)
+open(p, 'w').write(s)
+print('platform.sh patched')
+PY
+          grep -n 'komi-a31' target/linux/mediatek/mt7981/base-files/lib/upgrade/platform.sh
+
+      - name: Add FM25S01A (FudanMicro) SPI-NAND support patch
+        run: |
+          echo 'LS0tIGEvZHJpdmVycy9tdGQvbmFuZC9zcGkvTWFrZWZpbGUKKysrIGIvZHJpdmVycy9tdGQvbmFuZC9zcGkvTWFrZWZpbGUKQEAgLTEsMyArMSwzIEBACiAjIFNQRFgtTGljZW5zZS1JZGVudGlmaWVyOiBHUEwtMi4wCi1zcGluYW5kLW9ianMgOj0gY29yZS5vIGdpZ2FkZXZpY2UubyBtYWNyb25peC5vIG1pY3Jvbi5vIHBhcmFnb24ubyB0b3NoaWJhLm8gd2luYm9uZC5vIGV0cm9uLm8gZXNtdC5vCitzcGluYW5kLW9ianMgOj0gY29yZS5vIGdpZ2FkZXZpY2UubyBtYWNyb25peC5vIG1pY3Jvbi5vIHBhcmFnb24ubyB0b3NoaWJhLm8gd2luYm9uZC5vIGV0cm9uLm8gZXNtdC5vIGZtc2gubwogb2JqLSQoQ09ORklHX01URF9TUElfTkFORCkgKz0gc3BpbmFuZC5vCi0tLSBhL2RyaXZlcnMvbXRkL25hbmQvc3BpL2NvcmUuYworKysgYi9kcml2ZXJzL210ZC9uYW5kL3NwaS9jb3JlLmMKQEAgLTc1OSw3ICs3NTksOCBAQAogCSZwYXJhZ29uX3NwaW5hbmRfbWFudWZhY3R1cmVyLAogCSZ0b3NoaWJhX3NwaW5hbmRfbWFudWZhY3R1cmVyLAogCSZ3aW5ib25kX3NwaW5hbmRfbWFudWZhY3R1cmVyLAogCSZlc210X2M4X3NwaW5hbmRfbWFudWZhY3R1cmVyLAorCSZmbXNoX3NwaW5hbmRfbWFudWZhY3R1cmVyLAogfTsKIAogc3RhdGljIGludCBzcGluYW5kX21hbnVmYWN0dXJlcl9tYXRjaChzdHJ1Y3Qgc3BpbmFuZF9kZXZpY2UgKnNwaW5hbmQsCi0tLSBhL2luY2x1ZGUvbGludXgvbXRkL3NwaW5hbmQuaAorKysgYi9pbmNsdWRlL2xpbnV4L210ZC9zcGluYW5kLmgKQEAgLTI0NSw3ICsyNDUsOCBAQAogZXh0ZXJuIGNvbnN0IHN0cnVjdCBzcGluYW5kX21hbnVmYWN0dXJlciBwYXJhZ29uX3NwaW5hbmRfbWFudWZhY3R1cmVyOwogZXh0ZXJuIGNvbnN0IHN0cnVjdCBzcGluYW5kX21hbnVmYWN0dXJlciB0b3NoaWJhX3NwaW5hbmRfbWFudWZhY3R1cmVyOwogZXh0ZXJuIGNvbnN0IHN0cnVjdCBzcGluYW5kX21hbnVmYWN0dXJlciB3aW5ib25kX3NwaW5hbmRfbWFudWZhY3R1cmVyOwogZXh0ZXJuIGNvbnN0IHN0cnVjdCBzcGluYW5kX21hbnVmYWN0dXJlciBlc210X2M4X3NwaW5hbmRfbWFudWZhY3R1cmVyOworZXh0ZXJuIGNvbnN0IHN0cnVjdCBzcGluYW5kX21hbnVmYWN0dXJlciBmbXNoX3NwaW5hbmRfbWFudWZhY3R1cmVyOwogCiAvKioKICAqIHN0cnVjdCBzcGluYW5kX29wX3ZhcmlhbnRzIC0gU1BJIE5BTkQgb3BlcmF0aW9uIHZhcmlhbnRzCi0tLSAvZGV2L251bGwKKysrIGIvZHJpdmVycy9tdGQvbmFuZC9zcGkvZm1zaC5jCkBAIC0wLDAgKzEsNzAgQEAKKy8vIFNQRFgtTGljZW5zZS1JZGVudGlmaWVyOiBHUEwtMi4wCisvKgorICogRnVkYW4gTWljcm8gU1BJIE5BTkQgZHJpdmVyCisgKgorICogQ29weXJpZ2h0IChjKSAyMDIwLTIwMjEgUm9ja2NoaXAgRWxlY3Ryb25pY3MgQ28uLCBMdGQuCisgKiBBdXRob3I6IERpbmdxaWFuZyBMaW4gPGpvbi5saW5Acm9jay1jaGlwcy5jb20+CisgKi8KKyNpbmNsdWRlIDxsaW51eC9kZXZpY2UuaD4KKyNpbmNsdWRlIDxsaW51eC9rZXJuZWwuaD4KKyNpbmNsdWRlIDxsaW51eC9tdGQvc3BpbmFuZC5oPgorCisjZGVmaW5lIFNQSU5BTkRfTUZSX0ZNU0gJCTB4QTEKKworc3RhdGljIFNQSU5BTkRfT1BfVkFSSUFOVFMocmVhZF9jYWNoZV92YXJpYW50cywKKwkJU1BJTkFORF9QQUdFX1JFQURfRlJPTV9DQUNIRV9YNF9PUCgwLCAxLCBOVUxMLCAwKSwKKwkJU1BJTkFORF9QQUdFX1JFQURfRlJPTV9DQUNIRV9YMl9PUCgwLCAxLCBOVUxMLCAwKSwKKwkJU1BJTkFORF9QQUdFX1JFQURfRlJPTV9DQUNIRV9PUCh0cnVlLCAwLCAxLCBOVUxMLCAwKSwKKwkJU1BJTkFORF9QQUdFX1JFQURfRlJPTV9DQUNIRV9PUChmYWxzZSwgMCwgMSwgTlVMTCwgMCkpOworc3RhdGljIFNQSU5BTkRfT1BfVkFSSUFOVFMod3JpdGVfY2FjaGVfdmFyaWFudHMsCisJCVNQSU5BTkRfUFJPR19MT0FEX1g0KHRydWUsIDAsIE5VTEwsIDApLAorCQlTUElOQU5EX1BST0dfTE9BRCh0cnVlLCAwLCBOVUxMLCAwKSk7CitzdGF0aWMgU1BJTkFORF9PUF9WQVJJQU5UUyh1cGRhdGVfY2FjaGVfdmFyaWFudHMsCisJCVNQSU5BTkRfUFJPR19MT0FEX1g0KGZhbHNlLCAwLCBOVUxMLCAwKSwKKwkJU1BJTkFORF9QUk9HX0xPQUQoZmFsc2UsIDAsIE5VTEwsIDApKTsKKworc3RhdGljIGludCBmbTI1czAxYV9vb2JsYXlvdXRfZWNjKHN0cnVjdCBtdGRfaW5mbyAqbXRkLCBpbnQgc2VjdGlvbiwKKwkJCQkgIHN0cnVjdCBtdGRfb29iX3JlZ2lvbiAqcmVnaW9uKQoreworCXJldHVybiAtRVJBTkdFOworfQorCitzdGF0aWMgaW50IGZtMjVzMDFhX29vYmxheW91dF9mcmVlKHN0cnVjdCBtdGRfaW5mbyAqbXRkLCBpbnQgc2VjdGlvbiwKKwkJCQkgICBzdHJ1Y3QgbXRkX29vYl9yZWdpb24gKnJlZ2lvbikKK3sKKwlpZiAoc2VjdGlvbikKKwkJcmV0dXJuIC1FUkFOR0U7CisKKwlyZWdpb24tPm9mZnNldCA9IDI7CisJcmVnaW9uLT5sZW5ndGggPSA2MjsKKworCXJldHVybiAwOworfQorCitzdGF0aWMgY29uc3Qgc3RydWN0IG10ZF9vb2JsYXlvdXRfb3BzIGZtMjVzMDFhX29vYmxheW91dCA9IHsKKwkuZWNjID0gZm0yNXMwMWFfb29ibGF5b3V0X2VjYywKKwkuZnJlZSA9IGZtMjVzMDFhX29vYmxheW91dF9mcmVlLAorfTsKKworc3RhdGljIGNvbnN0IHN0cnVjdCBzcGluYW5kX2luZm8gZm1zaF9zcGluYW5kX3RhYmxlW10gPSB7CisJU1BJTkFORF9JTkZPKCJGTTI1UzAxQSIsCisJCSAgICAgU1BJTkFORF9JRChTUElOQU5EX1JFQURJRF9NRVRIT0RfT1BDT0RFX0RVTU1ZLCAweEU0KSwKKwkJICAgICBOQU5EX01FTU9SRygxLCAyMDQ4LCA2NCwgNjQsIDEwMjQsIDIwLCAxLCAxLCAxKSwKKwkJICAgICBOQU5EX0VDQ1JFUSgxLCA1MTIpLAorCQkgICAgIFNQSU5BTkRfSU5GT19PUF9WQVJJQU5UUygmcmVhZF9jYWNoZV92YXJpYW50cywKKwkJCQkJICAgICAgJndyaXRlX2NhY2hlX3ZhcmlhbnRzLAorCQkJCQkgICAgICAmdXBkYXRlX2NhY2hlX3ZhcmlhbnRzKSwKKwkJICAgICAwLAorCQkgICAgIFNQSU5BTkRfRUNDSU5GTygmZm0yNXMwMWFfb29ibGF5b3V0LCBOVUxMKSksCit9OworCitzdGF0aWMgY29uc3Qgc3RydWN0IHNwaW5hbmRfbWFudWZhY3R1cmVyX29wcyBmbXNoX3NwaW5hbmRfbWFudWZfb3BzID0geworfTsKKworY29uc3Qgc3RydWN0IHNwaW5hbmRfbWFudWZhY3R1cmVyIGZtc2hfc3BpbmFuZF9tYW51ZmFjdHVyZXIgPSB7CisJLmlkID0gU1BJTkFORF9NRlJfRk1TSCwKKwkubmFtZSA9ICJGdWRhbiBNaWNybyIsCisJLmNoaXBzID0gZm1zaF9zcGluYW5kX3RhYmxlLAorCS5uY2hpcHMgPSBBUlJBWV9TSVpFKGZtc2hfc3BpbmFuZF90YWJsZSksCisJLm9wcyA9ICZmbXNoX3NwaW5hbmRfbWFudWZfb3BzLAorfTsK' | base64 -d > target/linux/mediatek/patches-5.4/494-mtd-spinand-add-support-fmsh.patch
+          ls -l target/linux/mediatek/patches-5.4/494-mtd-spinand-add-support-fmsh.patch
+
+      - name: Configure (.config + make defconfig)
+        run: |
+          cat > .config <<'CFG'
+CONFIG_TARGET_mediatek=y
+CONFIG_TARGET_mediatek_mt7981=y
+CONFIG_TARGET_mediatek_mt7981_DEVICE_konka_komi-a31=y
+CONFIG_PACKAGE_luci=y
+CONFIG_PACKAGE_luci-app-mtk=y
+CONFIG_PACKAGE_kmod-mt_wifi=y
+CONFIG_PACKAGE_wifi-profile=y
+CONFIG_PACKAGE_mapd=y
+CONFIG_PACKAGE_wappd=y
+CONFIG_PACKAGE_1905daemon=y
+CONFIG_PACKAGE_libmapd=y
+CONFIG_PACKAGE_bndstrg_plus=y
+CONFIG_PACKAGE_wificonf=y
+CONFIG_PACKAGE_ttyd=y
+CFG
+          make defconfig
+          grep -E 'konka_komi-a31|kmod-mt_wifi|luci-app-mtk|mapd|wappd|1905daemon|libmapd|bndstrg|wificonf' .config
+
+      - name: Build
+        run: |
+          ulimit -s 65536
+          set -o pipefail
+          make -j$(nproc) V=s 2>&1 | tee build.log
+        continue-on-error: true
+
+      - name: Check build result
+        id: check
+        run: |
+          if ls bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-sysupgrade*.bin >/dev/null 2>&1; then
+            echo "BUILD_OK"
+            echo "ok=true" >> $GITHUB_OUTPUT
+          else
+            echo "BUILD_FAILED - errors:"
+            grep -n -i -E "error:|Error [0-9]|failed to build|FAILED|patch.*failed|Hunk|fatal|No such file|cannot|undefined" build.log | tail -80
+            echo "---- last 80 lines ----"
+            tail -80 build.log
+            echo "ok=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: a31-rm65-easymesh-firmware
+          path: |
+            bin/targets/mediatek/mt7981/*konka_komi-a31-initramfs*.bin
+            bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-factory*.bin
+            bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-sysupgrade*.bin
+            build.log
+          if-no-files-found: warn
+
+      - name: Fail job if build failed
+        if: steps.check.outputs.ok == 'false'
+        run: exit 1
