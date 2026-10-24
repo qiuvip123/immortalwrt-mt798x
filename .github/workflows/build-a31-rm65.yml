@@ -86,10 +86,10 @@ jobs:
       - name: Build
         run: |
           ulimit -s 65536
-          # shrink runner env to stay under kernel ARG_MAX (mt_wifi compile cmd is huge)
-          for v in $(env | cut -d= -f1); do case "$v" in GITHUB_*|RUNNER_*|ACTIONS_*|INPUT_*|STATE_*|OUTPUT_*|STEP_*) unset "$v";; esac; done
+          echo "ARG_MAX=$(getconf ARG_MAX) env_bytes=$(env | wc -c)"
           set -o pipefail
-          make -j$(nproc) V=s 2>&1 | tee build.log
+          # full env reset to stay far below kernel ARG_MAX (mt_wifi aggregate compile cmd is huge)
+          env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin HOME=/home/runner             make -j$(nproc) V=s 2>&1 | tee build.log
         continue-on-error: true
 
       - name: Check build result
