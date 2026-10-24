@@ -86,6 +86,8 @@ jobs:
       - name: Build
         run: |
           ulimit -s 65536
+          # shrink runner env to stay under kernel ARG_MAX (mt_wifi compile cmd is huge)
+          for v in $(env | cut -d= -f1); do case "$v" in GITHUB_*|RUNNER_*|ACTIONS_*|INPUT_*|STATE_*|OUTPUT_*|STEP_*) unset "$v";; esac; done
           set -o pipefail
           make -j$(nproc) V=s 2>&1 | tee build.log
         continue-on-error: true
