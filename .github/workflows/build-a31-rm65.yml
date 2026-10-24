@@ -79,25 +79,8 @@ jobs:
 
       - name: Patch mt_wifi tarball (fix pChipCap EMI MTWF_DBG use)
         run: |
-          cd "$GITHUB_WORKSPACE"
-          rm -rf /tmp/mtwifi_patch
-          mkdir -p /tmp/mtwifi_patch
-          tar -xJf dl/mt79xx_20220907-8b55f5.tar.xz -C /tmp/mtwifi_patch
-          python3 - <<'PY'
-path = '/tmp/mtwifi_patch/mt_wifi/chips/mt7981.c'
-s = open(path, encoding='utf-8', errors='replace').read()
-old = '	MTWF_DBG(pAd, DBG_CAT_FW, DBG_SUBCAT_ALL, DBG_LVL_DEBUG,
-			"emi physical base: 0x%08x, size: 0x%08x\n",
-			pChipCap->emi_phy_addr, pChipCap->emi_phy_addr_size);'
-new = '#ifdef CONFIG_CONNINFRA_SUPPORT
-' + old + '
-#endif /* CONFIG_CONNINFRA_SUPPORT */'
-assert old in s, 'mt7981.c EMI anchor not found'
-open(path, 'w', encoding='utf-8', newline='
-').write(s.replace(old, new))
-print('patched: MTWF_DBG EMI now guarded by CONFIG_CONNINFRA_SUPPORT')
-PY
-          tar -cJf dl/mt79xx_20220907-8b55f5.tar.xz -C /tmp/mtwifi_patch mt_wifi
+          echo 'IyAtKi0gY29kaW5nOiB1dGYtOCAtKi0KIiIiR2l0SHViIEFjdGlvbnMg5YaF5omn6KGM77ya57uZIG10X3dpZmkgdGFyYmFsbCDmiZMgcENoaXBDYXAgRU1JIOihpeS4geWQjumHjeaJk+WMhSIiIgppbXBvcnQgb3MsIHRhcmZpbGUsIHNodXRpbAoKc3JjID0gJ2RsL210Nzl4eF8yMDIyMDkwNy04YjU1ZjUudGFyLnh6Jwp0bXAgPSAnL3RtcC9tdHdpZmlfcGF0Y2gnCnNodXRpbC5ybXRyZWUodG1wLCBpZ25vcmVfZXJyb3JzPVRydWUpCm9zLm1ha2VkaXJzKHRtcCkKd2l0aCB0YXJmaWxlLm9wZW4oc3JjKSBhcyB0ZjoKICAgIHRmLmV4dHJhY3RhbGwodG1wKQoKcGF0aCA9IG9zLnBhdGguam9pbih0bXAsICdtdF93aWZpJywgJ2NoaXBzJywgJ210Nzk4MS5jJykKcyA9IG9wZW4ocGF0aCwgZW5jb2Rpbmc9J3V0Zi04JywgZXJyb3JzPSdyZXBsYWNlJykucmVhZCgpCm9sZCA9ICdcdE1UV0ZfREJHKHBBZCwgREJHX0NBVF9GVywgREJHX1NVQkNBVF9BTEwsIERCR19MVkxfREVCVUcsXG5cdFx0XHQiZW1pIHBoeXNpY2FsIGJhc2U6IDB4JTA4eCwgc2l6ZTogMHglMDh4XFxuIixcblx0XHRcdHBDaGlwQ2FwLT5lbWlfcGh5X2FkZHIsIHBDaGlwQ2FwLT5lbWlfcGh5X2FkZHJfc2l6ZSk7JwpuZXcgPSAnI2lmZGVmIENPTkZJR19DT05OSU5GUkFfU1VQUE9SVFxuJyArIG9sZCArICdcbiNlbmRpZiAvKiBDT05GSUdfQ09OTklORlJBX1NVUFBPUlQgKi8nCmFzc2VydCBvbGQgaW4gcywgJ210Nzk4MS5jIEVNSSBhbmNob3Igbm90IGZvdW5kJwpvcGVuKHBhdGgsICd3JywgZW5jb2Rpbmc9J3V0Zi04JywgbmV3bGluZT0nXG4nKS53cml0ZShzLnJlcGxhY2Uob2xkLCBuZXcpKQpwcmludCgncGF0Y2hlZCBtdDc5ODEuYzogRU1JIE1UV0ZfREJHIG5vdyBndWFyZGVkIGJ5IENPTkZJR19DT05OSU5GUkFfU1VQUE9SVCcpCgp3aXRoIHRhcmZpbGUub3BlbihzcmMsICd3Onh6JykgYXMgdGY6CiAgICB0Zi5hZGQob3MucGF0aC5qb2luKHRtcCwgJ210X3dpZmknKSwgYXJjbmFtZT0nbXRfd2lmaScpCnByaW50KCdyZXBhY2tlZCcsIHNyYywgb3MucGF0aC5nZXRzaXplKHNyYykpCg==' | base64 -d > /tmp/patch_mtwifi.py
+          python3 /tmp/patch_mtwifi.py
           ls -l dl/mt79xx_20220907-8b55f5.tar.xz
 
       - name: Build
