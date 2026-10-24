@@ -1,0 +1,32 @@
+
+/*
+ * MTK closed-source mt_wifi symbol stubs.
+ * This kernel build does not compile MTK hnat/ppe, which the closed driver
+ * links against. Provide no-op implementations so mt_wifi loads;
+ * hardware NAT acceleration is left disabled.
+ */
+#include <linux/export.h>
+
+int ra_sw_nat_hook_tx(void *hook)
+{
+	return 0;
+}
+EXPORT_SYMBOL(ra_sw_nat_hook_tx);
+
+int ra_sw_nat_hook_rx(void *hook)
+{
+	return 0;
+}
+EXPORT_SYMBOL(ra_sw_nat_hook_rx);
+
+int ppe_dev_register_hook(void *args)
+{
+	return 0;
+}
+EXPORT_SYMBOL(ppe_dev_register_hook);
+
+int ppe_dev_unregister_hook(void *args)
+{
+	return 0;
+}
+EXPORT_SYMBOL(ppe_dev_unregister_hook);
