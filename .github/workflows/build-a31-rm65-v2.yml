@@ -30,6 +30,15 @@ jobs:
           sudo ln -s /x/ws "$GITHUB_WORKSPACE"
           cd /x/ws && git rev-parse --short HEAD && ls feeds.conf.default
 
+      - name: Fetch A31 v2 aux files (a31-v2 dir in this repo)
+        run: |
+          mkdir -p /tmp/aux
+          base="https://raw.githubusercontent.com/qiuvip123/immortalwrt-mt798x/openwrt-21.02/a31-v2"
+          for f in mt7981-konka-komi-a31.dts mt7981.mk.append patch_net.py patch_plat.py nf_options.txt stubs.txt fmsh.c apply_fmsh.py patch_mtwifi.py config.diff uci-defaults-99-a31-custom hotplug-99-pppoe-ipv6-hnat; do
+            wget -q "$base/$f" -O "/tmp/aux/$f" || curl -fsSL "$base/$f" -o "/tmp/aux/$f"
+            ls -l "/tmp/aux/$f"
+          done
+
       - name: Patch feeds.conf.default (drop mtk feed requiring git01 auth)
         run: |
           cd /x/ws
@@ -42,7 +51,141 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: Add A31 device tree (mt7981-konka-komi-a31.dts)
+      - name: Add A31 device support (dts, mt7981.mk, 02_network, platform.sh, NF options)
         run: |
           cd /x/ws
-          echo 'L2R0cy12MS87CiNpbmNsdWRlIDxkdC1iaW5kaW5ncy9ncGlvL2dwaW8uaD4KI2luY2x1ZGUgPGR0LWJpbmRpbmdzL2lucHV0L2lucHV0Lmg+CiNpbmNsdWRlICJtdDc5ODEuZHRzaSIKCi8gewogICAgICAgIG1vZGVsID0gIktPTktBIEtPTUkgQTMxIjsKICAgICAgICBjb21wYXRpYmxlID0gImtvbmthLGtvbWktYTMxIiwgIm1lZGlhdGVrLG10Nzk4MSI7CgoJYWxpYXNlcyB7CgkJbGVkLWJvb3QgPSAmc3RhdHVzX3JlZF9sZWQ7CgkJbGVkLWZhaWxzYWZlID0gJnN0YXR1c19yZWRfbGVkOwoJCWxlZC1ydW5uaW5nID0gJnN0YXR1c19ncmVlbl9sZWQ7CgkJbGVkLXVwZ3JhZGUgPSAmc3RhdHVzX2dyZWVuX2xlZDsKCX07CgoJY2hvc2VuIHsKCQlib290YXJncyA9ICJjb25zb2xlPXR0eVMwLDExNTIwMG4xIGxvZ2xldmVsPTggIFwKCQkJCWVhcmx5Y29uPXVhcnQ4MjUwLG1taW8zMiwweDExMDAyMDAwIjsKCX07CgogICAgICAgIG1lbW9yeSB7CiAgICAgICAgICAgICAgICByZWcgPSA8MCAweDQwMDAwMDAwIDAgMHgxMDAwMDAwMD47CiAgICAgICAgfTsKCQogICAgICAgIGxlZHMgewogICAgICAgICAgICAgICAgY29tcGF0aWJsZSA9ICJncGlvLWxlZHMiOwoKICAgICAgICAgICAgICAgIHN0YXR1c19ncmVlbl9sZWQ6IGxlZC0wIHsKICAgICAgICAgICAgICAgICAgICAgICAgbGFiZWwgPSAiZ3JlZW46c3RhdHVzIjsKICAgICAgICAgICAgICAgICAgICAgICAgZ3Bpb3MgPSA8JnBpbyA4IEdQSU9fQUNUSVZFX0xPVz47CiAgICAgICAgICAgICAgICB9OwoKICAgICAgICAgICAgICAgIHN0YXR1c19ibHVlX2xlZDogbGVkLTEgewogICAgICAgICAgICAgICAgICAgICAgICBsYWJlbCA9ICJibHVlOnN0YXR1cyI7CiAgICAgICAgICAgICAgICAgICAgICAgIGdwaW9zID0gPCZwaW8gMTMgR1BJT19BQ1RJVkVfTE9XPjsKICAgICAgICAgICAgICAgIH07CgogICAgICAgICAgICAgICAgc3RhdHVzX3JlZF9sZWQ6IGxlZC0yIHsKICAgICAgICAgICAgICAgICAgICAgICAgbGFiZWwgPSAicmVkOnN0YXR1cyI7CiAgICAgICAgICAgICAgICAgICAgICAgIGdwaW9zID0gPCZwaW8gMzQgR1BJT19BQ1RJVkVfTE9XPjsKICAgICAgICAgICAgICAgIH07CiAgICAgICAgfTsKCiAgICAgICAgZ3Bpby1rZXlzIHsKICAgICAgICAgICAgICAgIGNvbXBhdGlibGUgPSAiZ3Bpby1rZXlzIjsKICAgICAgICAgICAgICAgICAgICAgICAgYnV0dG9uLXJlc2V0IHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBsYWJlbCA9ICJyZXNldCI7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbGludXgsY29kZSA9IDxLRVlfUkVTVEFSVD47CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZ3Bpb3MgPSA8JnBpbyAxIEdQSU9fQUNUSVZFX0xPVz47CiAgICAgICAgICAgICAgICAgICAgICAgIH07CgogICAgICAgICAgICAgICAgICAgICAgICBidXR0b24tbWVzaCB7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbGFiZWwgPSAibWVzaCI7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZ3Bpb3MgPSA8JnBpbyAwIEdQSU9fQUNUSVZFX0xPVz47CgkJCQlsaW51eCxjb2RlID0gPEJUTl85PjsKCQkJCWxpbnV4LGlucHV0LXR5cGUgPSA8RVZfU1c+OwogICAgICAgICAgICAgICAgICAgICAgICB9OwogICAgICAgIH07CgoKCglubWJtX3NwaW1fbmFuZCB7CiAgICAgICAgICAgICAgICBjb21wYXRpYmxlID0gImdlbmVyaWMsbm1ibSI7CiAgICAgICAgICAgICAgICAjYWRkcmVzcy1jZWxscyA9IDwxPjsKICAgICAgICAgICAgICAgICNzaXplLWNlbGxzID0gPDE+OwoKICAgICAgICAgICAgICAgIGxvd2VyLW10ZC1kZXZpY2UgPSA8JnNwaV9uYW5kPjsKICAgICAgICAgICAgICAgIGZvcmNlZC1jcmVhdGU7CgogICAgICAgICAgICAgICAgcGFydGl0aW9ucyB7CiAgICAgICAgICAgICAgICAgICAgICAgIGNvbXBhdGlibGUgPSAiZml4ZWQtcGFydGl0aW9ucyI7CiAgICAgICAgICAgICAgICAgICAgICAgICNhZGRyZXNzLWNlbGxzID0gPDE+OwogICAgICAgICAgICAgICAgICAgICAgICAjc2l6ZS1jZWxscyA9IDwxPjsKCiAgICAgICAgICAgICAgICAgICAgICAgIHBhcnRpdGlvbkAwIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBsYWJlbCA9ICJCTDIiOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHJlZyA9IDwweDAwIDB4MTAwMDAwPjsKICAgICAgICAgICAgICAgICAgICAgICAgfTsKCiAgICAgICAgICAgICAgICAgICAgICAgIHBhcnRpdGlvbkAxMDAwMDAgewogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGxhYmVsID0gInUtYm9vdC1lbnYiOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHJlZyA9IDwweDEwMDAwMCAweDgwMDAwPjsKICAgICAgICAgICAgICAgICAgICAgICAgfTsKCiAgICAgICAgICAgICAgICAgICAgICAgIHBhcnRpdGlvbkAxODAwMDAgewogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGxhYmVsID0gIkZhY3RvcnkiOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHJlZyA9IDwweDE4MDAwMCAweDIwMDAwMD47CiAgICAgICAgICAgICAgICAgICAgICAgIH07CgogICAgICAgICAgICAgICAgICAgICAgICBwYXJ0aXRpb25AMzgwMDAwIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBsYWJlbCA9ICJGSVAiOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHJlZyA9IDwweDM4MDAwMCAweDIwMDAwMD47CiAgICAgICAgICAgICAgICAgICAgICAgIH07CgogICAgICAgICAgICAgICAgICAgICAgICBwYXJ0aXRpb25ANTgwMDAwIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBsYWJlbCA9ICJ1YmkiOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHJlZyA9IDwweDU4MDAwMCAweDcwMDAwMDA+OwogICAgICAgICAgICAgICAgICAgICAgICB9OwogICAgICAgICAgICAgICAgfTsKICAgICAgICB9Owp9OwoKJnVhcnQwIHsKICAgICAgICBzdGF0dXMgPSAib2theSI7Cn07Cgomd2F0Y2hkb2cgewogICAgICAgIHN0YXR1cyA9ICJva2F5IjsKfTsKICAKJmV0aCB7CglzdGF0dXMgPSAib2theSI7CgoJZ21hYzA6IG1hY0AwIHsKCQljb21wYXRpYmxlID0gIm1lZGlhdGVrLGV0aC1tYWMiOwoJCXJlZyA9IDwwPjsKCQlwaHktbW9kZSA9ICIyNTAwYmFzZS14IjsKCgkJZml4ZWQtbGluayB7CgkJCXNwZWVkID0gPDI1MDA+OwoJCQlmdWxsLWR1cGxleDsKCQkJcGF1c2U7CgkJfTsKCX07CgoJZ21hYzE6IG1hY0AxIHsKCQljb21wYXRpYmxlID0gIm1lZGlhdGVrLGV0aC1tYWMiOwoJCWxhYmVsID0gIndhbiI7CgkJcmVnID0gPDE+OwoJCXBoeS1tb2RlID0gImdtaWkiOwoJCXBoeS1oYW5kbGUgPSA8JnBoeTA+OwoJfTsKCgltZGlvOiBtZGlvLWJ1cyB7CgkJI2FkZHJlc3MtY2VsbHMgPSA8MT47CgkJI3NpemUtY2VsbHMgPSA8MD47CgoJCXBoeTA6IGV0aGVybmV0LXBoeUAwIHsKCQkJY29tcGF0aWJsZSA9ICJldGhlcm5ldC1waHktaWQwM2EyLjk0NjEiOwoJCQlyZWcgPSA8MD47CgkJCXBoeS1tb2RlID0gImdtaWkiOwoJCQludm1lbS1jZWxscyA9IDwmcGh5X2NhbGlicmF0aW9uPjsKCQkJbnZtZW0tY2VsbC1uYW1lcyA9ICJwaHktY2FsLWRhdGEiOwoJCX07CgoJCXN3aXRjaEAwIHsKCQkJY29tcGF0aWJsZSA9ICJtZWRpYXRlayxtdDc1MzEiOwoJCQlyZWcgPSA8MzE+OwoJCQlyZXNldC1ncGlvcyA9IDwmcGlvIDM5IDA+OwoKCQkJcG9ydHMgewoJCQkJI2FkZHJlc3MtY2VsbHMgPSA8MT47CgkJCQkjc2l6ZS1jZWxscyA9IDwwPjsKCgkJCQlwb3J0QDAgewoJCQkJCXJlZyA9IDwwPjsKCQkJCQlsYWJlbCA9ICJsYW4xIjsKCQkJCX07CgoJCQkJcG9ydEAxIHsKCQkJCQlyZWcgPSA8MT47CgkJCQkJbGFiZWwgPSAibGFuMiI7CgkJCQl9OwoKCQkJCXBvcnRAMiB7CgkJCQkJcmVnID0gPDI+OwoJCQkJCWxhYmVsID0gImxhbjMiOwoJCQkJfTsKCgkJCQlwb3J0QDYgewoJCQkJCXJlZyA9IDw2PjsKCQkJCQlsYWJlbCA9ICJjcHUiOwoJCQkJCWV0aGVybmV0ID0gPCZnbWFjMD47CgkJCQkJcGh5LW1vZGUgPSAiMjUwMGJhc2UteCI7CgoJCQkJCWZpeGVkLWxpbmsgewoJCQkJCQlzcGVlZCA9IDwyNTAwPjsKCQkJCQkJZnVsbC1kdXBsZXg7CgkJCQkJCXBhdXNlOwoJCQkJCX07CgkJCQl9OwoJCQl9OwoJCX07Cgl9Owp9OwoKJmhuYXQgewoJbXRrZXRoLXdhbiA9ICJldGgxIjsKCW10a2V0aC1sYW4gPSAibGFuIjsKCW10a2V0aC1tYXgtZ21hYyA9IDwyPjsKCXN0YXR1cyA9ICJva2F5IjsKfTsKCiZzcGkwIHsKICAgICAgICBwaW5jdHJsLW5hbWVzID0gImRlZmF1bHQiOwogICAgICAgIHBpbmN0cmwtMCA9IDwmc3BpMF9mbGFzaF9waW5zPjsKICAgICAgICBzdGF0dXMgPSAib2theSI7CgogICAgICAgIHNwaV9uYW5kOiBzcGlfbmFuZEAwIHsKICAgICAgICAgICAgICAgICNhZGRyZXNzLWNlbGxzID0gPDE+OwogICAgICAgICAgICAgICAgI3NpemUtY2VsbHMgPSA8MT47CiAgICAgICAgICAgICAgICBjb21wYXRpYmxlID0gInNwaS1uYW5kIjsKICAgICAgICAgICAgICAgIHJlZyA9IDwwPjsKICAgICAgICAgICAgICAgIHNwaS1tYXgtZnJlcXVlbmN5ID0gPDUyMDAwMDAwPjsKICAgICAgICAgICAgICAgIHNwaS10eC1idXMtd2lkdGggPSA8ND47CiAgICAgICAgICAgICAgICBzcGktcngtYnVzLXdpZHRoID0gPDQ+OwogICAgICAgICAgICAgICAgc3BpLWNhbC1lbmFibGU7CiAgICAgICAgICAgICAgICBzcGktY2FsLW1vZGUgPSAicmVhZC1kYXRhIjsKICAgICAgICAgICAgICAgIHNwaS1jYWwtZGF0YWxlbiA9IDw3PjsKICAgICAgICAgICAgICAgIHNwaS1jYWwtZGF0YSA9IC9iaXRzLyA4IDB4NTMgMHg1MCAweDQ5IDB4NEUgMHg0MSAweDRFIDB4NDQ7IC8qICdTUElOQU5EJyAqLwogICAgICAgICAgICAgICAgc3BpLWNhbC1hZGRybGVuID0gPDU+OwogICAgICAgICAgICAgICAgc3BpLWNhbC1hZGRyID0gL2JpdHMvIDMyIDB4MCAweDAgMHgwIDB4MCAweDA+OwogICAgICAgIH07Cn07CgomcGlvIHsKCXNwaTBfZmxhc2hfcGluczogc3BpMC1waW5zIHsKCQltdXggewoJCQlmdW5jdGlvbiA9ICJzcGkiOwoJCQlncm91cHMgPSAic3BpMCIsICJzcGkwX3dwX2hvbGQiOwoJCX07CgoJCWNvbmYtcHUgewoJCQlwaW5zID0gIlNQSTBfQ1MiLCAiU1BJMF9IT0xEIiwgIlNQSTBfV1AiOwoJCQlkcml2ZS1zdHJlbmd0aCA9IDxNVEtfRFJJVkVfOG1BPjsKCQkJYmlhcy1wdWxsLXVwID0gPE1US19QVVBEX1NFVF9SMVIwXzExPjsKCQl9OwoKCQljb25mLXBkIHsKCQkJcGlucyA9ICJTUEkwX0NMSyIsICJTUEkwX01PU0kiLCAiU1BJMF9NSVNPIjsKCQkJZHJpdmUtc3RyZW5ndGggPSA8TVRLX0RSSVZFXzhtQT47CgkJCWJpYXMtcHVsbC1kb3duID0gPE1US19QVVBEX1NFVF9SMVIwXzExPjsKCQl9OwoJfTsKfTsK
+          cp /tmp/aux/mt7981-konka-komi-a31.dts target/linux/mediatek/files-5.4/arch/arm64/boot/dts/mediatek/mt7981-konka-komi-a31.dts
+          cat /tmp/aux/mt7981.mk.append >> target/linux/mediatek/image/mt7981.mk
+          python3 /tmp/aux/patch_net.py
+          python3 /tmp/aux/patch_plat.py
+          cat /tmp/aux/nf_options.txt >> target/linux/mediatek/mt7981/config-5.4
+          grep -n 'komi-a31' target/linux/mediatek/mt7981/base-files/etc/board.d/02_network target/linux/mediatek/mt7981/base-files/lib/upgrade/platform.sh target/linux/mediatek/image/mt7981.mk | head
+
+      - name: Remove IPsec (IP安全) menu from luci-app-mtk
+        run: |
+          cd /x/ws
+          rm -f package/mtk/applications/luci-app-mtk/luasrc/controller/ipsec.lua
+          rm -f package/mtk/applications/luci-app-mtk/luasrc/view/admin_mtk/mtk_ipsec_view.htm
+          echo "controllers now:"
+          ls package/mtk/applications/luci-app-mtk/luasrc/controller/
+
+      - name: Add luci-app-mtk-dash2 (Chinese EasyMesh/WiFi UI, yyyyy114514)
+        run: |
+          cd /x/ws
+          wget -q https://codeload.github.com/yyyyy114514/luci-app-mtk-dash2/tar.gz/refs/heads/main -O /tmp/dash2.tgz
+          mkdir -p package/luci-app-mtk-dash2
+          tar -xzf /tmp/dash2.tgz -C package/luci-app-mtk-dash2 --strip-components=1
+          ls package/luci-app-mtk-dash2/
+
+      - name: Add luci-theme-argon v2.2.5 (OpenWrt 21.02 compatible)
+        run: |
+          cd /x/ws
+          wget -q https://codeload.github.com/jerrykuku/luci-theme-argon/tar.gz/refs/tags/v2.2.5 -O /tmp/argon.tgz
+          mkdir -p package/luci-theme-argon
+          tar -xzf /tmp/argon.tgz -C package/luci-theme-argon --strip-components=1
+          ls package/luci-theme-argon/
+
+      - name: Add files overlay (uci-defaults + hotplug)
+        run: |
+          cd /x/ws
+          mkdir -p files/etc/uci-defaults files/etc/hotplug.d/iface
+          cp /tmp/aux/uci-defaults-99-a31-custom files/etc/uci-defaults/99-a31-custom
+          cp /tmp/aux/hotplug-99-pppoe-ipv6-hnat files/etc/hotplug.d/iface/99-pppoe-ipv6-hnat
+          chmod 0755 files/etc/uci-defaults/99-a31-custom files/etc/hotplug.d/iface/99-pppoe-ipv6-hnat
+          cat files/etc/uci-defaults/99-a31-custom
+
+      - name: Preserve MTK EasyMesh config on sysupgrade
+        run: |
+          cd /x/ws
+          F=$(find package/base-files -name sysupgrade.conf 2>/dev/null | head -1)
+          if [ -n "$F" ]; then
+            for c in mapd wappd 1905d datconf bndstrg mtkhnat; do
+              grep -q "/etc/config/$c" "$F" || echo "/etc/config/$c" >> "$F"
+            done
+            grep -E 'mapd|wappd|1905d|datconf|bndstrg|mtkhnat' "$F"
+          else
+            echo "WARN: sysupgrade.conf not found under package/base-files"
+          fi
+
+      - name: Prepare kernel source (apply all backport/pending/platform patches)
+        run: |
+          cd /x/ws
+          make target/linux/prepare V=s 2>&1 | tail -60
+          echo "--- kernel dirs ---"
+          ls -d build_dir/target-*/linux-mediatek_mt7981/linux-5.4.238
+
+      - name: Add mt_wifi nat symbol stubs (kernel source)
+        run: |
+          cd /x/ws
+          KD=$(ls -d build_dir/target-*/linux-mediatek_mt7981/linux-5.4.238 | head -1)
+          cat /tmp/aux/stubs.txt >> "$KD/drivers/net/ethernet/mediatek/mtk_eth_soc.c"
+          tail -6 "$KD/drivers/net/ethernet/mediatek/mtk_eth_soc.c"
+
+      - name: Inject FM25S01A (FudanMicro) SPI-NAND support into kernel source
+        run: |
+          cd /x/ws
+          KD=$(ls -d build_dir/target-*/linux-mediatek_mt7981/linux-5.4.238 | head -1)
+          python3 /tmp/aux/apply_fmsh.py "$KD" /tmp/aux/fmsh.c
+          grep -c fmsh "$KD/drivers/mtd/nand/spi/core.c" "$KD/include/linux/mtd/spinand.h" "$KD/drivers/mtd/nand/spi/Makefile"
+          ls -l "$KD/drivers/mtd/nand/spi/fmsh.c"
+
+      - name: Configure (.config + make defconfig)
+        run: |
+          cd /x/ws
+          cp /tmp/aux/config.diff .config
+          echo 'CONFIG_PACKAGE_luci-app-mtk-dash2=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-theme-argon=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-i18n-base-zh-cn=y' >> .config
+          make defconfig
+          grep -E 'konka_komi-a31|kmod-mt_wifi|luci-app-mtk|mapd|wappd|1905daemon|libmapd|bndstrg|wificonf|dash2|argon|zh-cn' .config
+
+      - name: Patch mt_wifi tarball (fix pChipCap EMI MTWF_DBG use)
+        run: |
+          cd /x/ws
+          python3 /tmp/aux/patch_mtwifi.py
+          ls -l dl/mt79xx_20220907-8b55f5.tar.xz
+
+      - name: Build
+        run: |
+          cd /x/ws
+          ulimit -s 65536
+          echo "ARG_MAX=$(getconf ARG_MAX) env_bytes=$(env | wc -c) PWD=$PWD"
+          set -o pipefail
+          # full env reset to stay far below kernel ARG_MAX (mt_wifi aggregate compile cmd is huge)
+          env -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin HOME=/home/runner             make -j$(nproc) V=s 2>&1 | tee build.log
+        continue-on-error: true
+
+      - name: Check build result
+        id: check
+        run: |
+          cd /x/ws
+          if ls bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-sysupgrade*.bin >/dev/null 2>&1; then
+            echo "BUILD_OK"
+            echo "--- v2 packages ---"
+            ls -l bin/packages/*/luci/*dash2*.ipk bin/packages/*/luci/*argon*.ipk 2>/dev/null || true
+            echo "ok=true" >> $GITHUB_OUTPUT
+          else
+            echo "BUILD_FAILED - errors:"
+            grep -n -i -E "error:|Error [0-9]|failed to build|FAILED|patch.*failed|Hunk|fatal|No such file|cannot|undefined" build.log | tail -100
+            echo "---- last 100 lines ----"
+            tail -100 build.log
+            echo "ok=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: a31-rm65-v2-firmware
+          path: |
+            /x/ws/bin/targets/mediatek/mt7981/*konka_komi-a31-initramfs*.bin
+            /x/ws/bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-factory*.bin
+            /x/ws/bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-sysupgrade*.bin
+            /x/ws/bin/packages/*/luci/luci-app-mtk-dash2*.ipk
+            /x/ws/bin/packages/*/luci/luci-theme-argon*.ipk
+            /x/ws/build.log
+          if-no-files-found: warn
+
+      - name: Fail job if build failed
+        if: steps.check.outputs.ok == 'false'
+        run: exit 1
