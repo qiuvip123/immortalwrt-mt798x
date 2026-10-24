@@ -1,0 +1,20 @@
+#!/bin/sh
+# WAN 为 PPPoE 时关闭 IPv6 硬件加速(规避 hnat 驱动 bug, 参考恩山 scq330 2026-10-16 更新)
+# 尽力而为: 依次尝试 rm65 常见 hnat 控制入口, 无法命中时静默跳过
+[ "$ACTION" = "ifup" ] || [ "$ACTION" = "ifupdate" ] || exit 0
+[ "$INTERFACE" = "wan" ] || [ "$INTERFACE" = "wan6" ] || exit 0
+proto=$(uci -q get network.wan.proto)
+[ -z "$proto" ] && exit 0
+case "$proto" in
+  pppoe) mode=off ;;
+  *) mode=on ;;
+esac
+if [ -f /etc/config/mtkhnat ]; then
+  uci -q set mtkhnat.@mtkhnat[0].ipv6_accel="$mode" 2>/dev/null
+  uci -q commit mtkhnat 2>/dev/null
+  [ -x /etc/init.d/mtkhnat ] && /etc/init.d/mtkhnat restart 2>/dev/null
+fi
+if [ -x /usr/sbin/mtkhnat_util ]; then
+  /usr/sbin/mtkhnat_util ipv6 "$mode" 2>/dev/null || true
+fi
+exit 0
