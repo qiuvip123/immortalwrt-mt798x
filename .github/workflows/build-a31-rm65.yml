@@ -77,6 +77,29 @@ jobs:
           make defconfig
           grep -E 'konka_komi-a31|kmod-mt_wifi|luci-app-mtk|mapd|wappd|1905daemon|libmapd|bndstrg|wificonf' .config
 
+      - name: Patch mt_wifi tarball (fix pChipCap EMI MTWF_DBG use)
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          rm -rf /tmp/mtwifi_patch
+          mkdir -p /tmp/mtwifi_patch
+          tar -xJf dl/mt79xx_20220907-8b55f5.tar.xz -C /tmp/mtwifi_patch
+          python3 - <<'PY'
+path = '/tmp/mtwifi_patch/mt_wifi/chips/mt7981.c'
+s = open(path, encoding='utf-8', errors='replace').read()
+old = '	MTWF_DBG(pAd, DBG_CAT_FW, DBG_SUBCAT_ALL, DBG_LVL_DEBUG,
+			"emi physical base: 0x%08x, size: 0x%08x\n",
+			pChipCap->emi_phy_addr, pChipCap->emi_phy_addr_size);'
+new = '#ifdef CONFIG_CONNINFRA_SUPPORT
+' + old + '
+#endif /* CONFIG_CONNINFRA_SUPPORT */'
+assert old in s, 'mt7981.c EMI anchor not found'
+open(path, 'w', encoding='utf-8', newline='
+').write(s.replace(old, new))
+print('patched: MTWF_DBG EMI now guarded by CONFIG_CONNINFRA_SUPPORT')
+PY
+          tar -cJf dl/mt79xx_20220907-8b55f5.tar.xz -C /tmp/mtwifi_patch mt_wifi
+          ls -l dl/mt79xx_20220907-8b55f5.tar.xz
+
       - name: Build
         run: |
           ulimit -s 65536
