@@ -1,0 +1,138 @@
+name: build-komi-a31-fmsh
+
+on:
+  workflow_dispatch:
+
+jobs:  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: openwrt-21.02
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev python3-distutils python3-setuptools rsync swig unzip zlib1g-dev file wget curl
+      - name: Update feeds        run:       - name: Fail job if build failed
+        if: steps.check.outputs.ok == 'false'
+        run: exit 1            bin/targets/mediatek/mt7981/*konka_komi-a31-initramfs*.bin
+            bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-factory*.bin
+            bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-sysupgrade*.bin
+            build.log
+          if-no-files-found: warn
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: komi-a31-firmware-fmsh
+          path: |            grep -n -i -E "error:|Error [0-9]|failed to build|FAILED|patch.*failed|Hunk|fatal|No such file|cannot|undefined" build.log | tail -80
+            echo "---- last 80 lines ----"
+            tail -80 build.log
+            echo "ok=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true        run: |
+          if ls bin/targets/mediatek/mt7981/*konka_komi-a31-squashfs-sysupgrade*.bin >/dev/null 2>&1; then
+            echo "BUILD_OK"
+            echo "ok=true" >> $GITHUB_OUTPUT
+          else
+            echo "BUILD_FAILED - errors:"          set -o pipefail
+          make -j$(nproc) V=s 2>&1 | tee build.log
+        continue-on-error: true
+
+      - name: Check build result
+        id: check          chmod +x files/etc/uci-defaults/99-custom
+          ls -l files/etc/uci-defaults/
+
+      - name: Build
+        run: |
+          ulimit -s 65536          uci set wireless.@wifi-iface[0].encryption='none'
+          uci delete wireless.@wifi-iface[0].key 2>/dev/null || true
+          uci commit wireless
+          passwd -d root
+          exit 0
+          EOF          mkdir -p files/etc/uci-defaults
+          cat > files/etc/uci-defaults/99-custom <<'EOF'
+          #!/bin/sh
+          uci set network.lan.ipaddr='192.168.2.1'
+          uci commit network
+          uci set wireless.@wifi-device[0].disabled='0'          echo 'CONFIG_PACKAGE_luci-app-ramfree=y' >> .config
+          make defconfig
+          grep -E 'konka_komi-a31|luci-app-filetransfer|luci-app-ttyd|ttyd|luci-app-ramfree|luci-app-turboacc-mtk|mtwifi-cfg' .config
+
+      - name: Apply LAN IP / open WiFi / empty root password
+        run: |      - name: Configure
+        run: |
+          cp -f defconfig/mt7981-ax3000-mtwifi-cfg.config .config
+          echo 'CONFIG_PACKAGE_luci-app-filetransfer=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-ttyd=y' >> .config
+          echo 'CONFIG_PACKAGE_ttyd=y' >> .config|            Zm0yNXMwMWFfb29ibGF5b3V0LCBO          cp /tmp/tailscale_1.104.2_arm64/tailscale /tmp/tailscale_1.104.2_arm64/tailscaled files/usr/sbin/
+          chmod +x files/usr/sbin/tailscale files/usr/sbin/tailscaled
+          echo 'IyEvYmluL3NoIC9ldGMvcmMuY29tbW9uCiMgdGFpbHNjYWxlZCBpbml0IHNjcmlwdApTVEFSVD05OQpTVE9QPTAxCgpFWFRSQV9DT01NQU5EUz0idXAgZG93biBzdGF0dXMiCkJJTj0vdXNyL3NiaW4vdGFpbHNjYWxlZAoKc3RhcnQoKSB7CiAgICBta2RpciAtcCAvdmFyL3J1bgogICAgWyAtZiAvdmFyL3J1bi90YWlsc2NhbGVkLnBpZCBdICYmIHJtIC1mIC92YXIvcnVuL3RhaWxzY2FsZWQucGlkCiAgICAiJEJJTiIgLS1wb3J0PTQxNjQxICYKICAgIGVjaG8gJCEgPiAvdmFyL3J1bi90YWlsc2NhbGVkLnBpZAp9CgpzdG9wKCkgewogICAgWyAtZiAvdmFyL3J1bi90YWlsc2NhbGVkLnBpZCBdICYmIGtpbGwgIiQoY2F0IC92YXIvcnVuL3RhaWxzY2FsZWQucGlkKSIgMj4vZGV2L251bGwKICAgIHJtIC1mIC92YXIvcnVuL3RhaWxzY2FsZWQucGlkCn0KCnVwKCkgeyAvdXNyL3NiaW4vdGFpbHNjYWxlIHVwICIkQCI7IH0KZG93bigpIHsgL3Vzci9zYmluL3RhaWxzY2FsZSBkb3duOyB9CnN0YXR1cygpIHsgL3Vzci9zYmluL3RhaWxzY2FsZSBzdGF0dXM7IH0=' | tr -d ' ' | base64 -d > files/etc/init.d/tailscaled
+          chmod +x files/etc/init.d/tailscaled
+          ls -l files/usr/sbin files/etc/init.d
+VUxM
+      - name: Bake Tailscale static binaries
+        run: |
+          mkdir -p files/usr/sbin files/etc/init.d
+          curl -fsSL -o /tmp/tailscale.tgz https://pkgs.tailscale.com/stable/tailscale_1.104.2_arm64.tgz
+          tar -xzf /tmp/tailscale.tgz -C /tmpKSksCit9OworCitzdGF0aWMgY29uc3Qgc3RydWN0IHNw          ls -l target/linux/generic/backport-5.4/494-mtd-spinand-add-support-fmsh.patch
+
+      - name: Add extra LuCI apps (ramfree)
+        run: |
+          git clone --depth 1 https://github.com/sbwml/luci-app-ramfree.git package/luci-app-ramfree
+          ls -l package/luci-app-ramfree/Makefile
+          aW5hbmRfbWFudWZhY3R1cmVyX29wcyBmbXNoX3NwaW5hbmRfbWFudWZfb3BzID0geworfTsKKwor
+          Y29uc3Qgc3RydWN0IHNwaW5hbmRfbWFudWZhY3R1cmVyIGZtc2hfc3BpbmFuZF9tYW51ZmFjdHVy
+          ZXIgPSB7CisJLmlkID0gU1BJTkFORF9NRlJfRk1TSCwKKwkubmFtZSA9ICJGdWRhbiBNaWNybyIs
+          CisJLmNoaXBzID0gZm1zaF9zcGluYW5kX3RhYmxlLAorCS5uY2hpcHMgPSBBUlJBWV9TSVpFKGZt
+          c2hfc3BpbmFuZF90YWJsZSksCisJLm9wcyA9ICZmbXNoX3NwaW5hbmRfbWFudWZfb3BzLAorfTsK' | tr -d ' ' | base64 -d > target/linux/generic/backport-5.4/494-mtd-spinand-add-support-fmsh.patch          PSB7CisJU1BJTkFORF9JTkZPKCJGTTI1UzAxQSIsCisJCSAgICAgU1BJTkFORF9JRChTUElOQU5E
+          X1JFQURJRF9NRVRIT0RfT1BDT0RFX0RVTU1ZLCAweEU0KSwKKwkJICAgICBOQU5EX01FTU9SRygx
+          LCAyMDQ4LCA2NCwgNjQsIDEwMjQsIDIwLCAxLCAxLCAxKSwKKwkJICAgICBOQU5EX0VDQ1JFUSgx
+          LCA1MTIpLAorCQkgICAgIFNQSU5BTkRfSU5GT19PUF9WQVJJQU5UUygmcmVhZF9jYWNoZV92YXJp
+          YW50cywKKwkJCQkJICAgICAgJndyaXRlX2NhY2hlX3ZhcmlhbnRzLAorCQkJCQkgICAgICAmdXBk
+          YXRlX2NhY2hlX3ZhcmlhbnRzKSwKKwkJICAgICAwLAorCQkgICAgIFNQSU5BTkRfRUNDSU5GTygm          c2VjdGlvbiwKKwkJCQkgICBzdHJ1Y3QgbXRkX29vYl9yZWdpb24gKnJlZ2lvbikKK3sKKwlpZiAo
+          c2VjdGlvbikKKwkJcmV0dXJuIC1FUkFOR0U7CisKKwlyZWdpb24tPm9mZnNldCA9IDI7CisJcmVn
+          aW9uLT5sZW5ndGggPSA2MjsKKworCXJldHVybiAwOworfQorCitzdGF0aWMgY29uc3Qgc3RydWN0
+          IG10ZF9vb2JsYXlvdXRfb3BzIGZtMjVzMDFhX29vYmxheW91dCA9IHsKKwkuZWNjID0gZm0yNXMw
+          MWFfb29ibGF5b3V0X2VjYywKKwkuZnJlZSA9IGZtMjVzMDFhX29vYmxheW91dF9mcmVlLAorfTsK
+          Kworc3RhdGljIGNvbnN0IHN0cnVjdCBzcGluYW5kX2luZm8gZm1zaF9zcGluYW5kX3RhYmxlW10g          LCAwKSk7CitzdGF0aWMgU1BJTkFORF9PUF9WQVJJQU5UUyh1cGRhdGVfY2FjaGVfdmFyaWFudHMs
+          CisJCVNQSU5BTkRfUFJPR19MT0FEX1g0KGZhbHNlLCAwLCBOVUxMLCAwKSwKKwkJU1BJTkFORF9Q
+          Uk9HX0xPQUQoZmFsc2UsIDAsIE5VTEwsIDApKTsKKworc3RhdGljIGludCBmbTI1czAxYV9vb2Js
+          YXlvdXRfZWNjKHN0cnVjdCBtdGRfaW5mbyAqbXRkLCBpbnQgc2VjdGlvbiwKKwkJCQkgIHN0cnVj
+          dCBtdGRfb29iX3JlZ2lvbiAqcmVnaW9uKQoreworCXJldHVybiAtRVJBTkdFOworfQorCitzdGF0
+          aWMgaW50IGZtMjVzMDFhX29vYmxheW91dF9mcmVlKHN0cnVjdCBtdGRfaW5mbyAqbXRkLCBpbnQg          RF9QQUdFX1JFQURfRlJPTV9DQUNIRV9YNF9PUCgwLCAxLCBOVUxMLCAwKSwKKwkJU1BJTkFORF9Q
+          QUdFX1JFQURfRlJPTV9DQUNIRV9YMl9PUCgwLCAxLCBOVUxMLCAwKSwKKwkJU1BJTkFORF9QQUdF
+          X1JFQURfRlJPTV9DQUNIRV9PUCh0cnVlLCAwLCAxLCBOVUxMLCAwKSwKKwkJU1BJTkFORF9QQUdF
+          X1JFQURfRlJPTV9DQUNIRV9PUChmYWxzZSwgMCwgMSwgTlVMTCwgMCkpOworc3RhdGljIFNQSU5B
+          TkRfT1BfVkFSSUFOVFMod3JpdGVfY2FjaGVfdmFyaWFudHMsCisJCVNQSU5BTkRfUFJPR19MT0FE
+          X1g0KHRydWUsIDAsIE5VTEwsIDApLAorCQlTUElOQU5EX1BST0dfTE9BRCh0cnVlLCAwLCBOVUxM          UEwtMi4wCisvKgorICogRnVkYW4gTWljcm8gU1BJIE5BTkQgZHJpdmVyCisgKgorICogQ29weXJp
+          Z2h0IChjKSAyMDIwLTIwMjEgUm9ja2NoaXAgRWxlY3Ryb25pY3MgQ28uLCBMdGQuCisgKiBBdXRo
+          b3I6IERpbmdxaWFuZyBMaW4gPGpvbi5saW5Acm9jay1jaGlwcy5jb20+CisgKi8KKyNpbmNsdWRl
+          IDxsaW51eC9kZXZpY2UuaD4KKyNpbmNsdWRlIDxsaW51eC9rZXJuZWwuaD4KKyNpbmNsdWRlIDxs
+          aW51eC9tdGQvc3BpbmFuZC5oPgorCisjZGVmaW5lIFNQSU5BTkRfTUZSX0ZNU0gJCTB4QTEKKwor
+          c3RhdGljIFNQSU5BTkRfT1BfVkFSSUFOVFMocmVhZF9jYWNoZV92YXJpYW50cywKKwkJU1BJTkFO          YWN0dXJlciB3aW5ib25kX3NwaW5hbmRfbWFudWZhY3R1cmVyOwogZXh0ZXJuIGNvbnN0IHN0cnVj
+          dCBzcGluYW5kX21hbnVmYWN0dXJlciBlc210X2M4X3NwaW5hbmRfbWFudWZhY3R1cmVyOworZXh0
+          ZXJuIGNvbnN0IHN0cnVjdCBzcGluYW5kX21hbnVmYWN0dXJlciBmbXNoX3NwaW5hbmRfbWFudWZh
+          Y3R1cmVyOwogCiAvKioKICAqIHN0cnVjdCBzcGluYW5kX29wX3ZhcmlhbnRzIC0gU1BJIE5BTkQg
+          b3BlcmF0aW9uIHZhcmlhbnRzCi0tLSAvZGV2L251bGwKKysrIGIvZHJpdmVycy9tdGQvbmFuZC9z
+          cGkvZm1zaC5jCkBAIC0wLDAgKzEsNzAgQEAKKy8vIFNQRFgtTGljZW5zZS1JZGVudGlmaWVyOiBH          fTsKIAogc3RhdGljIGludCBzcGluYW5kX21hbnVmYWN0dXJlcl9tYXRjaChzdHJ1Y3Qgc3BpbmFu
+          ZF9kZXZpY2UgKnNwaW5hbmQsCi0tLSBhL2luY2x1ZGUvbGludXgvbXRkL3NwaW5hbmQuaAorKysg
+          Yi9pbmNsdWRlL2xpbnV4L210ZC9zcGluYW5kLmgKQEAgLTI0NSw3ICsyNDUsOCBAQAogZXh0ZXJu
+          IGNvbnN0IHN0cnVjdCBzcGluYW5kX21hbnVmYWN0dXJlciBwYXJhZ29uX3NwaW5hbmRfbWFudWZh
+          Y3R1cmVyOwogZXh0ZXJuIGNvbnN0IHN0cnVjdCBzcGluYW5kX21hbnVmYWN0dXJlciB0b3NoaWJh
+          X3NwaW5hbmRfbWFudWZhY3R1cmVyOwogZXh0ZXJuIGNvbnN0IHN0cnVjdCBzcGluYW5kX21hbnVm        cmFnb24ubyB0b3NoaWJhLm8gd2luYm9uZC5vIGV0cm9uLm8gZXNtdC5vIGZtc2gubwogb2JqLSQo
+          Q09ORklHX01URF9TUElfTkFORCkgKz0gc3BpbmFuZC5vCi0tLSBhL2RyaXZlcnMvbXRkL25hbmQv
+          c3BpL2NvcmUuYworKysgYi9kcml2ZXJzL210ZC9uYW5kL3NwaS9jb3JlLmMKQEAgLTc1OSw3ICs3
+          NTksOCBAQAogCSZwYXJhZ29uX3NwaW5hbmRfbWFudWZhY3R1cmVyLAogCSZ0b3NoaWJhX3NwaW5h
+          bmRfbWFudWZhY3R1cmVyLAogCSZ3aW5ib25kX3NwaW5hbmRfbWFudWZhY3R1cmVyLAogCSZlc210
+          X2M4X3NwaW5hbmRfbWFudWZhY3R1cmVyLAorCSZmbXNoX3NwaW5hbmRfbWFudWZhY3R1cmVyLAog
+          echo '          LS0tIGEvZHJpdmVycy9tdGQvbmFuZC9zcGkvTWFrZWZpbGUKKysrIGIvZHJpdmVycy9tdGQvbmFu
+          ZC9zcGkvTWFrZWZpbGUKQEAgLTEsMyArMSwzIEBACiAjIFNQRFgtTGljZW5zZS1JZGVudGlmaWVy
+          OiBHUEwtMi4wCi1zcGluYW5kLW9ianMgOj0gY29yZS5vIGdpZ2FkZXZpY2UubyBtYWNyb25peC5v
+          IG1pY3Jvbi5vIHBhcmFnb24ubyB0b3NoaWJhLm8gd2luYm9uZC5vIGV0cm9uLm8gZXNtdC5vCitz
+          cGluYW5kLW9ianMgOj0gY29yZS5vIGdpZ2FkZXZpY2UubyBtYWNyb25peC5vIG1pY3Jvbi5vIHBh
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Add FM25S01A (FudanMicro) SPI-NAND support patch
