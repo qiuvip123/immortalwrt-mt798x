@@ -13,7 +13,7 @@ jobs:
 
       - name: Install dependenciesTEST_name: build-komi-a31-fmsh
 
-on:
+on:REPLACE_TEST_999
   workflow_dispatch:
 
 jobs:
