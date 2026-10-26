@@ -1,4 +1,4 @@
-name: build-jcg-q30-dash2
+name: build-jcg-q30-fmsh-fmsh
 
 on:
   workflow_dispatch:
@@ -84,17 +84,56 @@ jobs:
           c2hfc3BpbmFuZF90YWJsZSksCisJLm9wcyA9ICZmbXNoX3NwaW5hbmRfbWFudWZfb3BzLAorfTsK' | tr -d ' ' | base64 -d > target/linux/generic/backport-5.4/494-mtd-spinand-add-support-fmsh.patch
           ls -l target/linux/generic/backport-5.4/494-mtd-spinand-add-support-fmsh.patch
 
-      - name: Add dash2 LuCI app
+      - name: Add extra LuCI apps (ramfree)
         run: |
-          git clone --depth 1 https://github.com/yyyyy114514/luci-app-mtk-dash2.git package/luci-app-mtk-dash2
-          ls -l package/luci-app-mtk-dash2/Makefile
+          git clone --depth 1 https://github.com/sbwml/luci-app-ramfree.git package/luci-app-ramfree
+          ls -l package/luci-app-ramfree/Makefile
+
+      - name: Bake Tailscale static binaries
+        run: |
+          mkdir -p files/usr/sbin files/etc/init.d
+          curl -fsSL -o /tmp/tailscale.tgz https://pkgs.tailscale.com/stable/tailscale_1.104.2_arm64.tgz
+          tar -xzf /tmp/tailscale.tgz -C /tmp
+          cp /tmp/tailscale_1.104.2_arm64/tailscale /tmp/tailscale_1.104.2_arm64/tailscaled files/usr/sbin/
+          chmod +x files/usr/sbin/tailscale files/usr/sbin/tailscaled
+          echo 'IyEvYmluL3NoIC9ldGMvcmMuY29tbW9uCiMgdGFpbHNjYWxlZCBpbml0IHNjcmlwdApTVEFSVD05OQpTVE9QPTAxCgpFWFRSQV9DT01NQU5EUz0idXAgZG93biBzdGF0dXMiCkJJTj0vdXNyL3NiaW4vdGFpbHNjYWxlZAoKc3RhcnQoKSB7CiAgICBta2RpciAtcCAvdmFyL3J1bgogICAgWyAtZiAvdmFyL3J1bi90YWlsc2NhbGVkLnBpZCBdICYmIHJtIC1mIC92YXIvcnVuL3RhaWxzY2FsZWQucGlkCiAgICAiJEJJTiIgLS1wb3J0PTQxNjQxICYKICAgIGVjaG8gJCEgPiAvdmFyL3J1bi90YWlsc2NhbGVkLnBpZAp9CgpzdG9wKCkgewogICAgWyAtZiAvdmFyL3J1bi90YWlsc2NhbGVkLnBpZCBdICYmIGtpbGwgIiQoY2F0IC92YXIvcnVuL3RhaWxzY2FsZWQucGlkKSIgMj4vZGV2L251bGwKICAgIHJtIC1mIC92YXIvcnVuL3RhaWxzY2FsZWQucGlkCn0KCnVwKCkgeyAvdXNyL3NiaW4vdGFpbHNjYWxlIHVwICIkQCI7IH0KZG93bigpIHsgL3Vzci9zYmluL3RhaWxzY2FsZSBkb3duOyB9CnN0YXR1cygpIHsgL3Vzci9zYmluL3RhaWxzY2FsZSBzdGF0dXM7IH0=' | tr -d ' ' | base64 -d > files/etc/init.d/tailscaled
+          chmod +x files/etc/init.d/tailscaled
+          ls -l files/usr/sbin files/etc/init.d
+
+      - name: Add custom luci-app-tailscale Lua GUI
+        run: |
+          mkdir -p files/usr/lib/lua/luci/controller files/usr/lib/lua/luci/view/tailscale
+          echo 'LS1bWwpsdWNpLWFwcC10YWlsc2NhbGUgKOiHquWumuS5iSBMdWEg5Zu+5b2i55WM6Z2i77yM6YCC55So5LqOIE9wZW5XcnQgMjEuMDIpCumdouWQkeW3suWGhee9rueahOmdmeaAgSB0YWlsc2NhbGUvdGFpbHNjYWxlZCDkuozov5vliLbjgIIK5LuF5o+Q5L6b54q25oCB5p+l55yL5LiOIOWQr+WKqC/lgZzmraIv6YeN5ZCvIOaTjeS9nO+8iOS4jee7keWumiB1Y2kg6YWN572u77yJ44CCCl1dCm1vZHVsZSgibHVjaS5jb250cm9sbGVyLnRhaWxzY2FsZSIsIHBhY2thZ2Uuc2VlYWxsKQoKZnVuY3Rpb24gaW5kZXgoKQoJZW50cnkoeyJhZG1pbiIsICJzZXJ2aWNlcyIsICJ0YWlsc2NhbGUifSwgdGVtcGxhdGUoInRhaWxzY2FsZS9zdGF0dXMiKSwgXygiVGFpbHNjYWxlIiksIDEwMCkKCWVudHJ5KHsiYWRtaW4iLCAic2VydmljZXMiLCAidGFpbHNjYWxlIiwgImFjdGlvbiJ9LCBjYWxsKCJhY3Rpb25fZG8iKSwgbmlsKS5sZWFmID0gdHJ1ZQplbmQKCmZ1bmN0aW9uIGFjdGlvbl9kbygpCglsb2NhbCBhY3QgPSBsdWNpLmh0dHAuZm9ybXZhbHVlKCJhY3QiKQoJbHVjaS5odHRwLnByZXBhcmVfY29udGVudCgidGV4dC9wbGFpbjsgY2hhcnNldD11dGYtOCIpCgoJaWYgYWN0ID09ICJ1cCIgdGhlbgoJCS0tIHRhaWxzY2FsZSB1cCDlnKjmnKrnmbvlvZXml7bkvJrmiZPljbDorqTor4EgVVJMCgkJbG9jYWwgb3V0ID0gbHVjaS51dGlsLmV4ZWMoInRhaWxzY2FsZSB1cCAyPiYxIiwgMzApCgkJbHVjaS5odHRwLndyaXRlKG91dCkKCWVsc2VpZiBhY3QgPT0gImRvd24iIHRoZW4KCQlsdWNpLnV0aWwuZXhlYygidGFpbHNjYWxlIGRvd24gMj4mMSIsIDIwKQoJCWx1Y2kuaHR0cC53cml0ZSgidGFpbHNjYWxlIOW3suaWreW8gCIpCgllbHNlaWYgYWN0ID09ICJyZXN0YXJ0IiB0aGVuCgkJbHVjaS51dGlsLmV4ZWMoIi9ldGMvaW5pdC5kL3RhaWxzY2FsZWQgcmVzdGFydCAyPiYxIiwgMzApCgkJbHVjaS5odHRwLndyaXRlKCJ0YWlsc2NhbGVkIOWuiOaKpOi/m+eoi+W3sumHjeWQryIpCgllbHNlaWYgYWN0ID09ICJzdGFydCIgdGhlbgoJCWx1Y2kudXRpbC5leGVjKCIvZXRjL2luaXQuZC90YWlsc2NhbGVkIHN0YXJ0IDI+JjEiLCAzMCkKCQlsdWNpLmh0dHAud3JpdGUoInRhaWxzY2FsZWQg5a6I5oqk6L+b56iL5bey5ZCv5YqoIikKCWVsc2VpZiBhY3QgPT0gInN0b3AiIHRoZW4KCQlsdWNpLnV0aWwuZXhlYygiL2V0Yy9pbml0LmQvdGFpbHNjYWxlZCBzdG9wIDI+JjEiLCAzMCkKCQlsdWNpLmh0dHAud3JpdGUoInRhaWxzY2FsZWQg5a6I5oqk6L+b56iL5bey5YGc5q2iIikKCWVsc2UKCQlsb2NhbCBvdXQgPSBsdWNpLnV0aWwuZXhlYygidGFpbHNjYWxlIHN0YXR1cyAyPiYxIiwgMTUpCgkJbHVjaS5odHRwLndyaXRlKG91dCkKCWVuZAplbmQK' | tr -d ' ' | base64 -d > files/usr/lib/lua/luci/controller/tailscale.lua
+          echo 'PCUraGVhZGVyJT4KPGgyIG5hbWU9ImNvbnRlbnQiPjwlOlRhaWxzY2FsZSU+PC9oMj4KPGRpdiBjbGFzcz0iY2JpLW1hcCI+Cgk8aDM+PCU65a6I5oqk6L+b56iL54q25oCBJT48L2gzPgoJPGRpdiBjbGFzcz0iY2JpLXNlY3Rpb24iPgoJCTwlIGxvY2FsIGRhZW1vbiA9IGx1Y2kuc3lzLmV4ZWMoInBpZG9mIHRhaWxzY2FsZWQgMj4vZGV2L251bGwgfCB0ciAtZCAnXG4nIikKCQkgICBpZiBkYWVtb24gfj0gIiIgdGhlbiAlPgoJCQk8cD48c3BhbiBzdHlsZT0iY29sb3I6IzE2YTM0YTtmb250LXdlaWdodDpib2xkIj48JTp0YWlsc2NhbGVk77ya6L+Q6KGM5LitJT48L3NwYW4+PC9wPgoJCTwlIGVsc2UgJT4KCQkJPHA+PHNwYW4gc3R5bGU9ImNvbG9yOiNkYzI2MjY7Zm9udC13ZWlnaHQ6Ym9sZCI+PCU6dGFpbHNjYWxlZO+8muW3suWBnOatoiU+PC9zcGFuPjwvcD4KCQk8JSBlbmQgJT4KCTwvZGl2PgoKCTxoMz48JTpUYWlsc2NhbGUg54q25oCBJT48L2gzPgoJPGRpdiBjbGFzcz0iY2JpLXNlY3Rpb24iPgoJCTxwcmUgc3R5bGU9ImZvbnQtZmFtaWx5Om1vbm9zcGFjZTtiYWNrZ3JvdW5kOiNmNWY1ZjU7Ym9yZGVyOjFweCBzb2xpZCAjZGRkO3BhZGRpbmc6MTBweDt3aGl0ZS1zcGFjZTpwcmUtd3JhcDt3b3JkLWJyZWFrOmJyZWFrLWFsbDtvdmVyZmxvdy14OmF1dG8iPjwlPWx1Y2kuc3lzLmV4ZWMoInRhaWxzY2FsZSBzdGF0dXMgMj4mMSIpJT48L3ByZT4KCQk8cCBzdHlsZT0iY29sb3I6IzU1NSI+PCU65o+Q56S677ya5aaC5p6c5bCa5pyq55m75b2V77yM54K55Ye75LiL5pa54oCc5ZCv5YqoIFRhaWxzY2FsZe+8iOiupOivge+8ieKAne+8jOWcqOa1j+iniOWZqOS4reaJk+W8gOi/lOWbnueahOiupOivgemTvuaOpeWNs+WPr+WujOaIkOeZu+W9leOAgiU+PC9wPgoJPC9kaXY+CgoJPGgzPjwlOuaTjeS9nCU+PC9oMz4KCTxkaXYgY2xhc3M9ImNiaS1zZWN0aW9uIj4KCQk8Zm9ybSBtZXRob2Q9InBvc3QiIGFjdGlvbj0iPCU9bHVjaS5kaXNwYXRjaGVyLmJ1aWxkX3VybCgiYWRtaW4vc2VydmljZXMvdGFpbHNjYWxlL2FjdGlvbiIpJT4iIHN0eWxlPSJkaXNwbGF5OmlubGluZS1ibG9jazttYXJnaW46MnB4Ij4KCQkJPGlucHV0IHR5cGU9ImhpZGRlbiIgbmFtZT0iYWN0IiB2YWx1ZT0idXAiLz4KCQkJPGlucHV0IHR5cGU9InN1Ym1pdCIgY2xhc3M9ImNiaS1idXR0b24gY2JpLWJ1dHRvbi1hcHBseSIgdmFsdWU9IjwlOuWQr+WKqCBUYWlsc2NhbGXvvIjorqTor4HvvIklPiIvPgoJCTwvZm9ybT4KCQk8Zm9ybSBtZXRob2Q9InBvc3QiIGFjdGlvbj0iPCU9bHVjaS5kaXNwYXRjaGVyLmJ1aWxkX3VybCgiYWRtaW4vc2VydmljZXMvdGFpbHNjYWxlL2FjdGlvbiIpJT4iIHN0eWxlPSJkaXNwbGF5OmlubGluZS1ibG9jazttYXJnaW46MnB4Ij4KCQkJPGlucHV0IHR5cGU9ImhpZGRlbiIgbmFtZT0iYWN0IiB2YWx1ZT0iZG93biIvPgoJCQk8aW5wdXQgdHlwZT0ic3VibWl0IiBjbGFzcz0iY2JpLWJ1dHRvbiBjYmktYnV0dG9uLXJlc2V0IiB2YWx1ZT0iPCU65YGc5q2iIFRhaWxzY2FsZSU+Ii8+CgkJPC9mb3JtPgoJCTxmb3JtIG1ldGhvZD0icG9zdCIgYWN0aW9uPSI8JT1sdWNpLmRpc3BhdGNoZXIuYnVpbGRfdXJsKCJhZG1pbi9zZXJ2aWNlcy90YWlsc2NhbGUvYWN0aW9uIiklPiIgc3R5bGU9ImRpc3BsYXk6aW5saW5lLWJsb2NrO21hcmdpbjoycHgiPgoJCQk8aW5wdXQgdHlwZT0iaGlkZGVuIiBuYW1lPSJhY3QiIHZhbHVlPSJyZXN0YXJ0Ii8+CgkJCTxpbnB1dCB0eXBlPSJzdWJtaXQiIGNsYXNzPSJjYmktYnV0dG9uIGNiaS1idXR0b24tYXBwbHkiIHZhbHVlPSI8JTrph43lkK8gdGFpbHNjYWxlZCU+Ii8+CgkJPC9mb3JtPgoJCTxmb3JtIG1ldGhvZD0icG9zdCIgYWN0aW9uPSI8JT1sdWNpLmRpc3BhdGNoZXIuYnVpbGRfdXJsKCJhZG1pbi9zZXJ2aWNlcy90YWlsc2NhbGUvYWN0aW9uIiklPiIgc3R5bGU9ImRpc3BsYXk6aW5saW5lLWJsb2NrO21hcmdpbjoycHgiPgoJCQk8aW5wdXQgdHlwZT0iaGlkZGVuIiBuYW1lPSJhY3QiIHZhbHVlPSJzdGFydCIvPgoJCQk8aW5wdXQgdHlwZT0ic3VibWl0IiBjbGFzcz0iY2JpLWJ1dHRvbiBjYmktYnV0dG9uLWFwcGx5IiB2YWx1ZT0iPCU65ZCv5YqoIHRhaWxzY2FsZWQg5a6I5oqk6L+b56iLJT4iLz4KCQk8L2Zvcm0+CgkJPGZvcm0gbWV0aG9kPSJwb3N0IiBhY3Rpb249IjwlPWx1Y2kuZGlzcGF0Y2hlci5idWlsZF91cmwoImFkbWluL3NlcnZpY2VzL3RhaWxzY2FsZS9hY3Rpb24iKSU+IiBzdHlsZT0iZGlzcGxheTppbmxpbmUtYmxvY2s7bWFyZ2luOjJweCI+CgkJCTxpbnB1dCB0eXBlPSJoaWRkZW4iIG5hbWU9ImFjdCIgdmFsdWU9InN0b3AiLz4KCQkJPGlucHV0IHR5cGU9InN1Ym1pdCIgY2xhc3M9ImNiaS1idXR0b24gY2JpLWJ1dHRvbi1yZXNldCIgdmFsdWU9IjwlOuWBnOatoiB0YWlsc2NhbGVkIOWuiOaKpOi/m+eoiyU+Ii8+CgkJPC9mb3JtPgoJPC9kaXY+CjwvZGl2Pgo8JStmb290ZXIlPgo=' | tr -d ' ' | base64 -d > files/usr/lib/lua/luci/view/tailscale/status.htm
+          chmod 644 files/usr/lib/lua/luci/controller/tailscale.lua files/usr/lib/lua/luci/view/tailscale/status.htm
+          ls -l files/usr/lib/lua/luci/controller/tailscale.lua files/usr/lib/lua/luci/view/tailscale/status.htm
 
       - name: Configure
         run: |
           cp -f defconfig/mt7981-ax3000-mtwifi-cfg.config .config
-          echo 'CONFIG_PACKAGE_luci-app-mtk-dash2=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-filetransfer=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-ttyd=y' >> .config
+          echo 'CONFIG_PACKAGE_ttyd=y' >> .config
+          echo 'CONFIG_PACKAGE_luci-app-ramfree=y' >> .config
           make defconfig
-          grep -E 'jcg_q30|luci-app-mtk-dash2|mtwifi-cfg' .config
+          grep -E 'jcg_q30|luci-app-filetransfer|luci-app-ttyd|ttyd|luci-app-ramfree|luci-app-turboacc-mtk|mtwifi-cfg' .config
+
+      - name: Apply LAN IP / open WiFi / empty root password
+        run: |
+          mkdir -p files/etc/uci-defaults
+          cat > files/etc/uci-defaults/99-custom <<'EOF'
+          #!/bin/sh
+          uci set network.lan.ipaddr='192.168.2.1'
+          uci commit network
+          uci set wireless.@wifi-device[0].disabled='0'
+          uci set wireless.@wifi-iface[0].encryption='none'
+          uci delete wireless.@wifi-iface[0].key 2>/dev/null || true
+          uci commit wireless
+          passwd -d root
+          exit 0
+          EOF
+          chmod +x files/etc/uci-defaults/99-custom
+          ls -l files/etc/uci-defaults/
 
       - name: Build
         run: |
@@ -121,7 +160,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: jcg-q30-firmware-dash2
+          name: jcg-q30-firmware-fmsh
           path: |
             bin/targets/mediatek/mt7981/*jcg_q30-initramfs*.bin
             bin/targets/mediatek/mt7981/*jcg_q30-squashfs-factory*.bin
