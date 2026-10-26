@@ -1,4 +1,4 @@
-name: build-jcg-q30-fmsh-fmsh
+name: build-jcg-q30-fmsh
 
 on:
   workflow_dispatch:
